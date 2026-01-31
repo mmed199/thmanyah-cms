@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package thmanyah.events;
+
+import "google/protobuf/timestamp.proto";
+
+message ContentMetadata {
+  int32 duration = 1;
+  optional int32 episode_number = 2;
+  optional int32 season_number = 3;
+  repeated string guests = 4;
+  optional string thumbnail_url = 5;
+}
+
+message ContentCreated {
+  string content_id = 1;
+  string program_id = 2;
+  string title = 3;
+  string type = 4;
+  string category = 5;
+  string language = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message ContentUpdated {
+  string content_id = 1;
+  string program_id = 2;
+  string status = 3;
+  repeated string updated_fields = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message ContentPublished {
+  string content_id = 1;
+  string program_id = 2;
+  string title = 3;
+  string description = 4;
+  string type = 5;
+  string category = 6;
+  string language = 7;
+  ContentMetadata metadata = 8;
+  google.protobuf.Timestamp published_at = 9;
+}
+
+message ContentArchived {
+  string content_id = 1;
+  string program_id = 2;
+  google.protobuf.Timestamp archived_at = 3;
+}
+
+message ContentDeleted {
+  string content_id = 1;
+  string program_id = 2;
+  google.protobuf.Timestamp deleted_at = 3;
+}
