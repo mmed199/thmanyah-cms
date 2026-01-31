@@ -18,9 +18,8 @@
 6. [API Design](#api-design)
 7. [Event-Driven Communication](#event-driven-communication)
 8. [Scalability Strategy](#scalability-strategy)
-9. [Protobuf Schemas](#protobuf-schemas)
-10. [Project Structure](#project-structure)
-11. [Trade-offs & Alternatives](#trade-offs--alternatives)
+9. [Project Structure](#project-structure)
+10. [Trade-offs & Alternatives](#trade-offs--alternatives)
 
 ---
 
@@ -40,6 +39,10 @@ Build a two-component system that stores and displays program episodes for users
 - Enable future import from external sources (YouTube, RSS)
 - Follow SOLID principles with low coupling and clear module boundaries
 
+### Design Philosophy
+
+This design prioritizes **clean architecture** and **demonstrable competency** over production-scale infrastructure. We deliberately simplify infrastructure while maintaining proper architectural boundaries — showing we know when NOT to over-engineer.
+
 ### High-Level Architecture
 
 ```mermaid
@@ -50,117 +53,158 @@ flowchart TB
     end
 
     subgraph Application["🏗️ NestJS Modular Monolith"]
-        CMS["📝 CMS Module<br>(REST API)"]
-        Discovery["🔍 Discovery Module<br>(GraphQL API)"]
-        Content["📦 Content Module<br>(Core Domain)"]
-        Ingestion["📥 Ingestion Module<br>(YouTube Importer)"]
+        CMS["📝 CMS<br>(REST API)"]
+        Discovery["🔍 Discovery<br>(GraphQL API)"]
+        Domain["💎 Domain<br>(Core + Services)"]
+        Ingestion["📥 Ingestion<br>(Import Strategies)"]
     end
 
     subgraph Infrastructure["⚙️ Infrastructure"]
-        PG[("🐘 PostgreSQL<br>Source of Truth")]
-        ES[("🔎 Elasticsearch<br>Search Index")]
-        NATS[("💬 NATS JetStream<br>Events + KV Cache")]
+        PG[("🐘 PostgreSQL<br>Source of Truth<br>+ Full-Text Search")]
+        Redis[("🔴 Redis<br>Cache Layer")]
     end
 
     Editors --> CMS
     Users --> Discovery
-    
-    CMS --> Content
-    Discovery --> Content
-    Ingestion --> Content
-    
-    Content --> PG
-    Content --> NATS
-    Discovery --> ES
-    Discovery --> NATS
+
+    CMS --> Domain
+    Discovery --> Domain
+    Ingestion --> Domain
+
+    Domain --> PG
+    Discovery --> Redis
 
     style Editors fill:#a8e6cf,stroke:#2d6a4f,color:#1b4332
     style Users fill:#ffd166,stroke:#d4a012,color:#6b5900
     style CMS fill:#74c0fc,stroke:#1971c2,color:#0c4a6e
     style Discovery fill:#b197fc,stroke:#7048e8,color:#3b1d8f
-    style Content fill:#ff8787,stroke:#c92a2a,color:#7f1d1d
+    style Domain fill:#ff8787,stroke:#c92a2a,color:#7f1d1d
     style Ingestion fill:#ffa94d,stroke:#e67700,color:#7c2d12
     style PG fill:#69db7c,stroke:#2f9e44,color:#14532d
-    style ES fill:#fcc419,stroke:#fab005,color:#713f12
-    style NATS fill:#da77f2,stroke:#ae3ec9,color:#581c87
+    style Redis fill:#ff6b6b,stroke:#c92a2a,color:#7f1d1d
 ```
 
 ---
 
 ## Architecture
 
-### Pattern: Modular Monolith
+### Pattern: Modular Monolith with Clean Architecture
 
-We chose a **modular monolith** over microservices to:
+We chose a **modular monolith** with **clean architecture principles** to:
 
 - Avoid premature distributed systems complexity
 - Maintain clear module boundaries within a single deployable unit
+- Keep the domain layer pure and framework-agnostic
 - Enable future extraction to microservices if needed
+
+### SOLID Compliance
+
+| Principle | Implementation |
+|-----------|---------------|
+| **S** — Single Responsibility | Each layer has one reason to change |
+| **O** — Open/Closed | Import strategies extensible without modification |
+| **L** — Liskov Substitution | Repository ports can be swapped (test/prod) |
+| **I** — Interface Segregation | Small, focused ports (Repository, EventPublisher, Cache) |
+| **D** — Dependency Inversion | Domain depends on abstractions (ports), not implementations |
 
 ### Key Architectural Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Architecture Style | Modular Monolith | Simpler ops, clear boundaries, evolution-ready |
-| Communication | In-process events + NATS persistence | Low latency, durable event log |
-| CQRS-lite | CMS (writes) / Discovery (reads) | Optimize each path independently |
-| Search | Elasticsearch | Industry-standard, handles complex queries at scale |
+| Decision           | Choice                               | Rationale                                           |
+| ------------------ | ------------------------------------ | --------------------------------------------------- |
+| Architecture Style | Modular Monolith + Clean Architecture | Simpler ops, clear boundaries, testable domain      |
+| Communication      | In-process EventEmitter              | No external messaging infrastructure needed         |
+| CQRS-lite          | CMS (writes) / Discovery (reads)     | Optimize each path independently                    |
+| Search             | PostgreSQL Full-Text Search          | Sufficient for scope, one less service to manage    |
+| Caching            | Redis                                | Industry standard, simple key-value with TTL        |
 
-### Module Boundaries
+### Module Boundaries & Dependency Flow
 
 ```mermaid
-flowchart LR
-    subgraph Write["✍️ Write Path (Low Traffic)"]
+flowchart TB
+    subgraph Adapters["🔌 Adapters (depend inward)"]
         CMS["📝 CMS<br>REST API"]
-        Ingestion["📥 Ingestion<br>YouTube Import"]
+        Discovery["🔍 Discovery<br>GraphQL + Cache"]
+        Ingestion["📥 Ingestion<br>Import Strategies"]
     end
-    
-    subgraph Core["💎 Core Domain"]
-        Content["📦 Content Module<br>Entities + Events"]
+
+    subgraph Domain["💎 Domain (pure core)"]
+        Entities["📦 Entities"]
+        Services["⚙️ Services"]
+        Ports["🔌 Ports"]
+        Events["📤 Events"]
     end
-    
-    subgraph Read["📖 Read Path (High Traffic)"]
-        Discovery["🔍 Discovery<br>GraphQL API"]
+
+    subgraph Infra["⚙️ Infrastructure (implements ports)"]
+        Repos["🗄️ Repositories<br>(TypeORM)"]
+        Cache["🔴 Redis Adapter"]
+        EventBus["📡 EventEmitter<br>Adapter"]
     end
-    
-    subgraph Infra["⚙️ Infrastructure"]
+
+    subgraph External["🌐 External"]
         PG[("🐘 PostgreSQL")]
-        ES[("🔎 Elasticsearch")]
-        NATS[("💬 NATS")]
+        Redis[("🔴 Redis")]
     end
+
+    CMS --> Services
+    Discovery --> Services
+    Ingestion --> Services
     
-    CMS --> Content
-    Ingestion --> Content
-    Content --> PG
-    Content -->|"📤 Events"| NATS
-    NATS -->|"📥 Consume"| Discovery
-    Discovery --> ES
-    Discovery -->|"💾 Cache"| NATS
+    Services --> Ports
+    Services --> Entities
+    Services --> Events
+    
+    Repos -.->|implements| Ports
+    Cache -.->|implements| Ports
+    EventBus -.->|implements| Ports
+    
+    Repos --> PG
+    Cache --> Redis
 
     style CMS fill:#74c0fc,stroke:#1971c2,color:#0c4a6e
-    style Ingestion fill:#ffa94d,stroke:#e67700,color:#7c2d12
-    style Content fill:#ff8787,stroke:#c92a2a,color:#7f1d1d
     style Discovery fill:#b197fc,stroke:#7048e8,color:#3b1d8f
-    style PG fill:#69db7c,stroke:#2f9e44,color:#14532d
-    style ES fill:#fcc419,stroke:#fab005,color:#713f12
-    style NATS fill:#da77f2,stroke:#ae3ec9,color:#581c87
+    style Ingestion fill:#ffa94d,stroke:#e67700,color:#7c2d12
+    style Entities fill:#ff8787,stroke:#c92a2a,color:#7f1d1d
+    style Services fill:#ff8787,stroke:#c92a2a,color:#7f1d1d
+    style Ports fill:#ff8787,stroke:#c92a2a,color:#7f1d1d
+    style Events fill:#ff8787,stroke:#c92a2a,color:#7f1d1d
+    style Repos fill:#69db7c,stroke:#2f9e44,color:#14532d
+    style Cache fill:#69db7c,stroke:#2f9e44,color:#14532d
+    style EventBus fill:#69db7c,stroke:#2f9e44,color:#14532d
+    style PG fill:#e9ecef,stroke:#868e96,color:#495057
+    style Redis fill:#e9ecef,stroke:#868e96,color:#495057
 ```
+
+### Dependency Rule
+
+> **Inner layers know nothing about outer layers.**
+
+- `domain/` has **zero** NestJS or infrastructure imports
+- `cms/`, `discovery/`, `ingestion/` depend on `domain/` services
+- `infrastructure/` implements `domain/` ports
 
 ---
 
 ## Technology Stack
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Runtime** | Node.js + TypeScript | Type safety, ecosystem |
-| **Framework** | NestJS | Modular architecture, DI, decorators |
-| **Database** | PostgreSQL | Source of truth, relational model |
-| **Search** | Elasticsearch | Full-text search, high read throughput |
-| **Messaging** | NATS JetStream | Event streaming with persistence |
-| **Caching** | NATS KV Store | Low-latency caching |
-| **Serialization** | Protocol Buffers | Efficient event/cache encoding |
-| **CMS API** | REST | Standard CRUD operations |
-| **Discovery API** | GraphQL | Flexible queries for frontend |
+| Layer             | Technology              | Purpose                                  |
+| ----------------- | ----------------------- | ---------------------------------------- |
+| **Runtime**       | Node.js + TypeScript    | Type safety, ecosystem                   |
+| **Framework**     | NestJS                  | Modular architecture, DI, decorators     |
+| **Database**      | PostgreSQL              | Source of truth, relational model        |
+| **Search**        | PostgreSQL Full-Text    | Full-text search with GIN index          |
+| **Caching**       | Redis                   | Low-latency key-value caching            |
+| **Events**        | NestJS EventEmitter     | In-process domain event publishing       |
+| **CMS API**       | REST                    | Standard CRUD operations                 |
+| **Discovery API** | GraphQL                 | Flexible queries for frontend            |
+
+### Simplification Rationale
+
+| Original Choice | Simplified To | Why |
+|-----------------|---------------|-----|
+| NATS JetStream | EventEmitter | No external messaging infra needed |
+| Elasticsearch | PostgreSQL FTS | One less service, sufficient for demo |
+| NATS KV | Redis | Standard, well-known cache solution |
+| Protobuf | TypeScript classes | No code generation, simpler DX |
 
 ---
 
@@ -171,7 +215,7 @@ flowchart LR
 ```mermaid
 erDiagram
     Program ||--o{ Content : "has many 📚"
-    
+
     Program["📺 Program"] {
         uuid id PK "🔑"
         string title "📌"
@@ -184,7 +228,7 @@ erDiagram
         timestamp created_at "📅"
         timestamp updated_at "🔄"
     }
-    
+
     Content["🎬 Content"] {
         uuid id PK "🔑"
         uuid program_id FK "🔗 nullable"
@@ -195,46 +239,62 @@ erDiagram
         string language "🌐"
         enum status "📊 draft | published | archived"
         enum source "📥 manual | youtube | rss"
-        string external_id "🆔 nullable"
+        string external_id "🆔 nullable, unique"
         jsonb metadata "⚙️"
+        tsvector search_vector "🔍 generated"
         timestamp published_at "🚀 nullable"
         timestamp created_at "📅"
         timestamp updated_at "🔄"
     }
 ```
 
+### Full-Text Search Column
+
+The `search_vector` column enables PostgreSQL full-text search:
+
+```sql
+-- Generated column for full-text search
+ALTER TABLE content ADD COLUMN search_vector tsvector 
+  GENERATED ALWAYS AS (
+    to_tsvector('simple', coalesce(title,'') || ' ' || coalesce(description,''))
+  ) STORED;
+
+-- GIN index for fast search
+CREATE INDEX idx_content_search ON content USING GIN(search_vector);
+```
+
 ### Enums
 
 ```typescript
 enum ProgramType {
-  PODCAST_SERIES = 'podcast_series',
-  DOCUMENTARY_SERIES = 'documentary_series',
+  PODCAST_SERIES = "podcast_series",
+  DOCUMENTARY_SERIES = "documentary_series",
 }
 
 enum ContentType {
-  PODCAST_EPISODE = 'podcast_episode',
-  DOCUMENTARY_EPISODE = 'documentary_episode',
-  STANDALONE_VIDEO = 'standalone_video',
+  PODCAST_EPISODE = "podcast_episode",
+  DOCUMENTARY_EPISODE = "documentary_episode",
+  STANDALONE_VIDEO = "standalone_video",
 }
 
 enum Category {
-  TECHNOLOGY = 'technology',
-  CULTURE = 'culture',
-  BUSINESS = 'business',
-  SOCIETY = 'society',
-  ENTERTAINMENT = 'entertainment',
+  TECHNOLOGY = "technology",
+  CULTURE = "culture",
+  BUSINESS = "business",
+  SOCIETY = "society",
+  ENTERTAINMENT = "entertainment",
 }
 
 enum Status {
-  DRAFT = 'draft',
-  PUBLISHED = 'published',
-  ARCHIVED = 'archived',
+  DRAFT = "draft",
+  PUBLISHED = "published",
+  ARCHIVED = "archived",
 }
 
 enum Source {
-  MANUAL = 'manual',
-  YOUTUBE = 'youtube',
-  RSS = 'rss',
+  MANUAL = "manual",
+  YOUTUBE = "youtube",
+  RSS = "rss",
 }
 ```
 
@@ -245,7 +305,7 @@ Type-specific fields are stored in the `metadata` column for extensibility:
 ```typescript
 // Podcast/Documentary episode metadata
 interface VideoMetadata {
-  duration: number;        // seconds
+  duration: number; // seconds
   episodeNumber?: number;
   seasonNumber?: number;
   guests?: string[];
@@ -253,7 +313,7 @@ interface VideoMetadata {
 
 // Future: Newsletter metadata
 interface NewsletterMetadata {
-  readingTime: number;     // minutes
+  readingTime: number; // minutes
   issueNumber: number;
 }
 ```
@@ -269,61 +329,271 @@ interface NewsletterMetadata {
 
 ## Module Design
 
-### Content Module (Core Domain)
+### Domain Module (Core)
 
-The heart of the system — owns entities, business rules, and emits domain events.
+The heart of the system — contains entities, business rules, ports, and services. **Zero framework dependencies.**
 
-**Responsibilities:**
-- Define `Program` and `Content` entities
-- Enforce domain rules (status transitions, validation)
-- Emit domain events on state changes
+```
+domain/
+├── entities/           # Program, Content
+├── events/             # Typed domain events
+├── ports/              # Repository & service interfaces
+├── services/           # Business logic orchestration
+└── domain.module.ts
+```
 
-**Key Interfaces:**
+**Entities:**
+
 ```typescript
-interface ProgramRepository {
-  create(program: Program): Promise<Program>;
-  findById(id: string): Promise<Program | null>;
-  update(id: string, data: Partial<Program>): Promise<Program>;
-  delete(id: string): Promise<void>;
-  findAll(filter: ProgramFilter, pagination: Pagination): Promise<PaginatedResult<Program>>;
-}
+// Pure domain entity - no decorators, no ORM
+export class Content {
+  constructor(
+    public readonly id: string,
+    public programId: string | null,
+    public title: string,
+    public description: string,
+    public type: ContentType,
+    public category: Category,
+    public language: string,
+    public status: Status,
+    public source: Source,
+    public externalId: string | null,
+    public metadata: ContentMetadata,
+    public publishedAt: Date | null,
+    public readonly createdAt: Date,
+    public updatedAt: Date,
+  ) {}
 
-interface ContentRepository {
-  create(content: Content): Promise<Content>;
-  findById(id: string): Promise<Content | null>;
-  update(id: string, data: Partial<Content>): Promise<Content>;
-  delete(id: string): Promise<void>;
-  findByProgramId(programId: string, pagination: Pagination): Promise<PaginatedResult<Content>>;
-  findAll(filter: ContentFilter, pagination: Pagination): Promise<PaginatedResult<Content>>;
+  publish(): void {
+    if (this.status === Status.ARCHIVED) {
+      throw new Error('Cannot publish archived content');
+    }
+    this.status = Status.PUBLISHED;
+    this.publishedAt = new Date();
+    this.updatedAt = new Date();
+  }
+
+  archive(): void {
+    this.status = Status.ARCHIVED;
+    this.updatedAt = new Date();
+  }
 }
 ```
 
-### CMS Module (Write API)
+**Ports (Interfaces):**
 
-Internal REST API for content managers.
+```typescript
+// domain/ports/content.repository.port.ts
+export interface ContentRepositoryPort {
+  save(content: Content): Promise<Content>;
+  findById(id: string): Promise<Content | null>;
+  findByExternalId(externalId: string): Promise<Content | null>;
+  findAll(filter: ContentFilter, pagination: Pagination): Promise<PaginatedResult<Content>>;
+  delete(id: string): Promise<void>;
+}
 
-**Responsibilities:**
-- CRUD operations for Programs and Content
-- Input validation and authorization
-- Trigger domain events via Content module
+// domain/ports/event-publisher.port.ts
+export interface EventPublisherPort {
+  publish(event: DomainEvent): void;
+}
 
-### Discovery Module (Read API)
+// domain/ports/cache.port.ts
+export interface CachePort {
+  get<T>(key: string): Promise<T | null>;
+  set<T>(key: string, value: T, ttlSeconds?: number): Promise<void>;
+  invalidate(key: string): Promise<void>;
+}
+```
 
-Public GraphQL API optimized for high read traffic.
+**Services:**
 
-**Responsibilities:**
-- Search and filter content via Elasticsearch
-- Cache frequently accessed data in NATS KV
-- Consume domain events to sync Elasticsearch index
+```typescript
+// domain/services/content.service.ts
+@Injectable()
+export class ContentService {
+  constructor(
+    @Inject(CONTENT_REPOSITORY) private readonly contentRepo: ContentRepositoryPort,
+    @Inject(EVENT_PUBLISHER) private readonly eventPublisher: EventPublisherPort,
+  ) {}
 
-### Ingestion Module
+  async create(input: CreateContentInput): Promise<Content> {
+    const content = new Content(
+      uuid(),
+      input.programId,
+      input.title,
+      // ...
+    );
+    const saved = await this.contentRepo.save(content);
+    this.eventPublisher.publish(new ContentCreated(saved.id, saved.programId));
+    return saved;
+  }
 
-Isolates external data sources from core domain.
+  async publish(id: string): Promise<Content> {
+    const content = await this.contentRepo.findById(id);
+    if (!content) throw new NotFoundException();
+    
+    content.publish(); // Domain logic
+    const saved = await this.contentRepo.save(content);
+    this.eventPublisher.publish(new ContentPublished(saved.id, saved.programId, saved.title));
+    return saved;
+  }
+}
+```
 
-**Responsibilities:**
-- Implement Strategy pattern for multiple sources
-- Normalize external data to domain Content
-- Trigger content creation via Content module
+### CMS Module (REST Adapter)
+
+Internal REST API for content managers. Thin controller layer that delegates to domain services.
+
+```
+cms/
+├── controllers/
+│   ├── program.controller.ts
+│   ├── content.controller.ts
+│   └── import.controller.ts
+├── dto/
+│   ├── create-content.dto.ts
+│   └── update-content.dto.ts
+└── cms.module.ts
+```
+
+### Discovery Module (GraphQL Adapter)
+
+Public GraphQL API optimized for high read traffic with Redis caching.
+
+```
+discovery/
+├── resolvers/
+│   ├── program.resolver.ts
+│   ├── content.resolver.ts
+│   └── search.resolver.ts
+├── services/
+│   ├── search.service.ts       # PostgreSQL full-text search
+│   └── cache.service.ts        # Redis caching logic
+├── dto/
+└── discovery.module.ts
+```
+
+**Search Service (PostgreSQL Full-Text):**
+
+```typescript
+// discovery/services/search.service.ts
+@Injectable()
+export class SearchService {
+  constructor(
+    @InjectRepository(ContentEntity)
+    private readonly contentRepo: Repository<ContentEntity>,
+  ) {}
+
+  async search(query: string, filters: SearchFilters, pagination: Pagination): Promise<SearchResult> {
+    const start = Date.now();
+    
+    const qb = this.contentRepo.createQueryBuilder('c')
+      .where('c.status = :status', { status: Status.PUBLISHED });
+
+    // Full-text search
+    if (query) {
+      qb.andWhere(`c.search_vector @@ plainto_tsquery('simple', :query)`, { query })
+        .orderBy(`ts_rank(c.search_vector, plainto_tsquery('simple', :query))`, 'DESC');
+    }
+
+    // Apply filters
+    if (filters.category) qb.andWhere('c.category = :category', { category: filters.category });
+    if (filters.type) qb.andWhere('c.type = :type', { type: filters.type });
+    if (filters.language) qb.andWhere('c.language = :lang', { lang: filters.language });
+    if (filters.publishedAfter) qb.andWhere('c.publishedAt >= :after', { after: filters.publishedAfter });
+    if (filters.publishedBefore) qb.andWhere('c.publishedAt <= :before', { before: filters.publishedBefore });
+
+    // Pagination
+    qb.skip(pagination.offset).take(pagination.limit);
+
+    const [items, total] = await qb.getManyAndCount();
+    
+    return {
+      items: items.map(this.toDomain),
+      total,
+      took: Date.now() - start,
+    };
+  }
+}
+```
+
+### Ingestion Module (Import Adapter)
+
+Strategy-based import with mock implementation for demo.
+
+```
+ingestion/
+├── strategies/
+│   ├── import.strategy.ts       # Interface
+│   └── mock-youtube.strategy.ts # Mock implementation
+├── controllers/
+│   └── import.controller.ts
+├── services/
+│   └── import.service.ts
+└── ingestion.module.ts
+```
+
+**Strategy Pattern:**
+
+```typescript
+// ingestion/strategies/import.strategy.ts
+export interface ImportStrategy {
+  readonly source: Source;
+  import(input: ImportInput): Promise<ImportResult>;
+}
+
+export interface ImportResult {
+  imported: number;
+  skipped: number;
+  errors: ImportError[];
+}
+
+// ingestion/strategies/mock-youtube.strategy.ts
+@Injectable()
+export class MockYouTubeStrategy implements ImportStrategy {
+  readonly source = Source.YOUTUBE;
+
+  constructor(private readonly contentService: ContentService) {}
+
+  async import(input: YouTubeImportInput): Promise<ImportResult> {
+    const result: ImportResult = { imported: 0, skipped: 0, errors: [] };
+    const fakeVideos = this.generateFakeVideos(input.count ?? 5);
+
+    for (const video of fakeVideos) {
+      // Idempotent: skip if externalId already exists
+      const exists = await this.contentService.findByExternalId(video.id);
+      if (exists) {
+        result.skipped++;
+        continue;
+      }
+
+      await this.contentService.create({
+        externalId: video.id,
+        source: Source.YOUTUBE,
+        programId: input.programId,
+        title: video.title,
+        description: video.description,
+        type: ContentType.PODCAST_EPISODE,
+        category: input.category ?? Category.TECHNOLOGY,
+        language: 'ar',
+        metadata: { duration: video.duration },
+      });
+      result.imported++;
+    }
+
+    return result;
+  }
+
+  private generateFakeVideos(count: number) {
+    return Array.from({ length: count }, (_, i) => ({
+      id: `yt-${Date.now()}-${i}`,
+      title: `فنجان - الحلقة ${100 + i}`,
+      description: 'حلقة جديدة من بودكاست فنجان',
+      duration: 3600 + Math.floor(Math.random() * 1800),
+    }));
+  }
+}
+```
 
 ---
 
@@ -333,32 +603,54 @@ Isolates external data sources from core domain.
 
 #### Programs
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/cms/programs` | Create program |
-| `GET` | `/api/cms/programs` | List programs (paginated) |
-| `GET` | `/api/cms/programs/:id` | Get program |
-| `PUT` | `/api/cms/programs/:id` | Update program |
-| `DELETE` | `/api/cms/programs/:id` | Delete program |
-| `GET` | `/api/cms/programs/:id/content` | List content in program |
+| Method   | Endpoint                        | Description               |
+| -------- | ------------------------------- | ------------------------- |
+| `POST`   | `/api/cms/programs`             | Create program            |
+| `GET`    | `/api/cms/programs`             | List programs (paginated) |
+| `GET`    | `/api/cms/programs/:id`         | Get program               |
+| `PUT`    | `/api/cms/programs/:id`         | Update program            |
+| `DELETE` | `/api/cms/programs/:id`         | Delete program            |
+| `GET`    | `/api/cms/programs/:id/content` | List content in program   |
 
 #### Content
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/cms/content` | Create content |
-| `GET` | `/api/cms/content` | List content (paginated) |
-| `GET` | `/api/cms/content/:id` | Get content |
-| `PUT` | `/api/cms/content/:id` | Update content (including status) |
-| `DELETE` | `/api/cms/content/:id` | Delete content |
+| Method   | Endpoint               | Description                       |
+| -------- | ---------------------- | --------------------------------- |
+| `POST`   | `/api/cms/content`     | Create content                    |
+| `GET`    | `/api/cms/content`     | List content (paginated)          |
+| `GET`    | `/api/cms/content/:id` | Get content                       |
+| `PUT`    | `/api/cms/content/:id` | Update content (including status) |
+| `DELETE` | `/api/cms/content/:id` | Delete content                    |
 
 #### Import
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/cms/import/youtube` | Trigger YouTube import |
-| `GET` | `/api/cms/import/jobs` | List import jobs |
-| `GET` | `/api/cms/import/jobs/:id` | Get import job status |
+| Method | Endpoint                  | Description                 |
+| ------ | ------------------------- | --------------------------- |
+| `POST` | `/api/cms/import/youtube` | Trigger mock YouTube import |
+
+**Import Request/Response:**
+
+```http
+POST /api/cms/import/youtube
+Content-Type: application/json
+
+{
+  "playlistId": "demo",
+  "programId": "550e8400-e29b-41d4-a716-446655440000",
+  "count": 5,
+  "category": "culture"
+}
+```
+
+```http
+HTTP/1.1 200 OK
+
+{
+  "imported": 5,
+  "skipped": 0,
+  "errors": []
+}
+```
 
 #### Example Request/Response
 
@@ -501,50 +793,103 @@ query SearchContent {
 
 ## Event-Driven Communication
 
-### Domain Events
+### Typed Domain Events
+
+Events are pure TypeScript classes — no Protobuf, no serialization overhead.
+
+```typescript
+// domain/events/domain-event.ts
+export abstract class DomainEvent {
+  readonly occurredAt = new Date();
+  abstract readonly eventName: string;
+}
+
+// domain/events/content.events.ts
+export class ContentCreated extends DomainEvent {
+  readonly eventName = 'content.created';
+  
+  constructor(
+    readonly contentId: string,
+    readonly programId: string | null,
+  ) { super(); }
+}
+
+export class ContentPublished extends DomainEvent {
+  readonly eventName = 'content.published';
+  
+  constructor(
+    readonly contentId: string,
+    readonly programId: string | null,
+    readonly title: string,
+  ) { super(); }
+}
+
+export class ContentUpdated extends DomainEvent {
+  readonly eventName = 'content.updated';
+  
+  constructor(
+    readonly contentId: string,
+    readonly programId: string | null,
+    readonly updatedFields: string[],
+  ) { super(); }
+}
+
+export class ContentArchived extends DomainEvent {
+  readonly eventName = 'content.archived';
+  
+  constructor(
+    readonly contentId: string,
+    readonly programId: string | null,
+  ) { super(); }
+}
+
+export class ContentDeleted extends DomainEvent {
+  readonly eventName = 'content.deleted';
+  
+  constructor(
+    readonly contentId: string,
+    readonly programId: string | null,
+  ) { super(); }
+}
+```
+
+### Event Flow
 
 ```mermaid
 flowchart LR
-    subgraph CMS["📝 CMS Module"]
-        Create["➕ Create/Update"]
+    subgraph Domain["💎 Domain Services"]
+        Create["➕ Create"]
+        Update["✏️ Update"]
         Publish["🚀 Publish"]
         Archive["📁 Archive"]
         Delete["🗑️ Delete"]
     end
-    
-    subgraph Events["💬 NATS JetStream"]
-        E1["📄 ContentCreated"]
-        E2["✏️ ContentUpdated"]
-        E3["🎉 ContentPublished"]
-        E4["📦 ContentArchived"]
-        E5["❌ ContentDeleted"]
-        E6["🔄 ProgramUpdated"]
-        E7["🗑️ ProgramDeleted"]
+
+    subgraph EventBus["📡 In-Process EventEmitter"]
+        E1["ContentCreated"]
+        E2["ContentUpdated"]
+        E3["ContentPublished"]
+        E4["ContentArchived"]
+        E5["ContentDeleted"]
     end
-    
-    subgraph Discovery["🔍 Discovery Module"]
-        Sync["🔄 ES Sync"]
-        Cache["🧹 Cache Invalidation"]
+
+    subgraph Handlers["🎯 Event Handlers"]
+        Cache["🧹 Cache<br>Invalidation"]
     end
-    
+
     Create --> E1
-    Create --> E2
+    Update --> E2
     Publish --> E3
     Archive --> E4
     Delete --> E5
-    
-    E3 --> Sync
-    E2 --> Sync
-    E4 --> Sync
-    E5 --> Sync
-    E6 --> Sync
-    E7 --> Sync
-    
+
     E2 --> Cache
+    E3 --> Cache
     E4 --> Cache
     E5 --> Cache
 
     style Create fill:#a8e6cf,stroke:#2d6a4f,color:#1b4332
+    style Update fill:#74c0fc,stroke:#1971c2,color:#0c4a6e
     style Publish fill:#69db7c,stroke:#2f9e44,color:#14532d
     style Archive fill:#ffd166,stroke:#d4a012,color:#6b5900
     style Delete fill:#ff8787,stroke:#c92a2a,color:#7f1d1d
@@ -553,39 +898,65 @@ flowchart LR
     style E3 fill:#d3f9d8,stroke:#40c057,color:#2b8a3e
     style E4 fill:#fff3bf,stroke:#fab005,color:#e67700
     style E5 fill:#ffe3e3,stroke:#fa5252,color:#c92a2a
-    style E6 fill:#e9ecef,stroke:#868e96,color:#495057
-    style E7 fill:#ffe3e3,stroke:#fa5252,color:#c92a2a
-    style Sync fill:#d0bfff,stroke:#7950f2,color:#5f3dc4
     style Cache fill:#fcc2d7,stroke:#e64980,color:#a61e4d
 ```
 
-### Event Definitions
+### Event Publisher Port Implementation
 
-| Event | Trigger | Elasticsearch Action |
-|-------|---------|---------------------|
-| `ContentCreated` | Content created | None (draft) |
-| `ContentUpdated` | Content modified | Reindex if published |
-| `ContentPublished` | Status → published | Index |
-| `ContentArchived` | Status → archived | Remove |
-| `ContentDeleted` | Content deleted | Remove |
-| `ProgramUpdated` | Program modified | Reindex published content |
-| `ProgramDeleted` | Program deleted | Remove all content |
+```typescript
+// infrastructure/events/event-emitter.adapter.ts
+@Injectable()
+export class EventEmitterAdapter implements EventPublisherPort {
+  constructor(private readonly eventEmitter: EventEmitter2) {}
 
-### Key Rule: Only Published Content in Elasticsearch
+  publish(event: DomainEvent): void {
+    this.eventEmitter.emit(event.eventName, event);
+  }
+}
+```
+
+### Cache Invalidation Handler
+
+```typescript
+// discovery/handlers/cache-invalidation.handler.ts
+@Injectable()
+export class CacheInvalidationHandler {
+  constructor(
+    @Inject(CACHE_PORT) private readonly cache: CachePort,
+  ) {}
+
+  @OnEvent('content.published')
+  @OnEvent('content.updated')
+  @OnEvent('content.archived')
+  @OnEvent('content.deleted')
+  async handleContentChange(event: ContentPublished | ContentUpdated | ContentArchived | ContentDeleted) {
+    await this.cache.invalidate(`content:${event.contentId}`);
+    
+    if (event.programId) {
+      await this.cache.invalidate(`program:${event.programId}:contents`);
+    }
+    
+    // Invalidate search cache (all keys with search: prefix)
+    // In production, use Redis SCAN or pattern-based invalidation
+  }
+}
+```
+
+### Content Status Lifecycle
 
 ```mermaid
 stateDiagram-v2
     [*] --> Draft: Create
     Draft --> Published: Publish
-    Published --> Published: Update (reindex ES)
-    Published --> Archived: Archive (remove from ES)
+    Published --> Published: Update (invalidate cache)
+    Published --> Archived: Archive (invalidate cache)
     Draft --> Deleted: Delete
-    Published --> Deleted: Delete (remove from ES)
+    Published --> Deleted: Delete (invalidate cache)
     Archived --> Deleted: Delete
-    
-    note right of Draft: Not in Elasticsearch
-    note right of Published: Indexed in Elasticsearch
-    note right of Archived: Not in Elasticsearch
+
+    note right of Draft: Not searchable
+    note right of Published: Searchable + Cached
+    note right of Archived: Not searchable
 ```
 
 ---
@@ -594,58 +965,89 @@ stateDiagram-v2
 
 ### Traffic Profile
 
-| Module | Traffic | Strategy |
-|--------|---------|----------|
-| CMS | ~100 req/hour | Single instance sufficient |
-| Discovery | ~2,800 req/sec | Caching + ES optimization |
+| Module    | Traffic        | Strategy                        |
+| --------- | -------------- | ------------------------------- |
+| CMS       | ~100 req/hour  | Single instance sufficient      |
+| Discovery | ~2,800 req/sec | Redis caching + PG optimization |
 
-### Caching Layer (NATS KV)
+### Caching Layer (Redis)
 
 ```mermaid
 flowchart LR
     Request["🌐 GraphQL Request"] --> Check{"💾 Cache Hit?"}
     Check -->|"✅ Yes"| Return["⚡ Return Cached<br>(< 5ms)"]
-    Check -->|"❌ No"| ES["🔎 Query Elasticsearch<br>(20-100ms)"]
-    ES --> Store["💾 Store in NATS KV"]
+    Check -->|"❌ No"| PG["🐘 Query PostgreSQL<br>(10-50ms)"]
+    PG --> Store["💾 Store in Redis"]
     Store --> Return2["📤 Return Response"]
 
     style Request fill:#74c0fc,stroke:#1971c2,color:#0c4a6e
     style Check fill:#ffd166,stroke:#d4a012,color:#6b5900
     style Return fill:#69db7c,stroke:#2f9e44,color:#14532d
-    style ES fill:#fcc419,stroke:#fab005,color:#713f12
-    style Store fill:#da77f2,stroke:#ae3ec9,color:#581c87
+    style PG fill:#69db7c,stroke:#2f9e44,color:#14532d
+    style Store fill:#ff6b6b,stroke:#c92a2a,color:#7f1d1d
     style Return2 fill:#a8e6cf,stroke:#2d6a4f,color:#1b4332
 ```
 
-**Cache Strategy:**
+**Cache Keys & TTL:**
 
-| Data | TTL | Key Pattern |
-|------|-----|-------------|
-| Single content | 5 min | `content:{id}` |
-| Program with content | 5 min | `program:{id}` |
-| Search results | 1 min | `search:{hash(query+filters)}` |
+| Data                 | TTL   | Key Pattern                    |
+| -------------------- | ----- | ------------------------------ |
+| Single content       | 5 min | `content:{id}`                 |
+| Single program       | 5 min | `program:{id}`                 |
+| Program with content | 5 min | `program:{id}:contents`        |
+| Search results       | 1 min | `search:{hash(query+filters)}` |
 
-**Cache Invalidation:**
-- Event-driven invalidation on content changes
-- Short TTL ensures eventual consistency
+**Cache Service:**
 
-### Elasticsearch Optimization
+```typescript
+// discovery/services/cache.service.ts
+@Injectable()
+export class CacheService implements CachePort {
+  constructor(@InjectRedis() private readonly redis: Redis) {}
 
-**Index Settings:**
-```json
-{
-  "settings": {
-    "number_of_shards": 3,
-    "number_of_replicas": 2,
-    "refresh_interval": "5s"
+  async get<T>(key: string): Promise<T | null> {
+    const data = await this.redis.get(key);
+    return data ? JSON.parse(data) : null;
+  }
+
+  async set<T>(key: string, value: T, ttlSeconds = 300): Promise<void> {
+    await this.redis.setex(key, ttlSeconds, JSON.stringify(value));
+  }
+
+  async invalidate(key: string): Promise<void> {
+    await this.redis.del(key);
   }
 }
 ```
 
+**Cache Invalidation Strategy:**
+
+- **Event-driven**: Invalidate on content changes via domain events
+- **TTL fallback**: Short TTL ensures eventual consistency
+- **Simple keys**: No complex patterns, easy to reason about
+
+### PostgreSQL Optimization
+
+**Full-Text Search Index:**
+
+```sql
+-- GIN index for fast full-text search
+CREATE INDEX idx_content_search ON content USING GIN(search_vector);
+
+-- Partial index for published content only
+CREATE INDEX idx_content_published ON content (id) 
+  WHERE status = 'published';
+
+-- Composite index for filtered queries
+CREATE INDEX idx_content_filter ON content (category, type, language, status);
+```
+
 **Query Optimization:**
-- Use `filter` context for exact matches (cacheable)
-- Limit `_source` fields returned
-- Use `search_after` for deep pagination
+
+- Use `search_vector @@ plainto_tsquery()` for full-text
+- Use `ts_rank()` for relevance scoring
+- Filter by status first (uses partial index)
+- Limit results with pagination
 
 ### Horizontal Scaling Path
 
@@ -654,145 +1056,38 @@ The application is **stateless** and ready for horizontal scaling:
 ```mermaid
 flowchart TB
     LB["⚖️ Load Balancer<br>(future)"]
-    
+
     subgraph Instances["🖥️ NestJS Instances"]
         App1["📦 Instance 1"]
         App2["📦 Instance 2"]
         App3["📦 Instance 3"]
     end
-    
+
     subgraph Shared["⚙️ Shared Infrastructure"]
-        NATS[("💬 NATS")]
+        Redis[("🔴 Redis")]
         PG[("🐘 PostgreSQL")]
-        ES[("🔎 Elasticsearch")]
     end
-    
+
     LB --> App1
     LB --> App2
     LB --> App3
-    
-    App1 --> NATS
-    App2 --> NATS
-    App3 --> NATS
-    
+
+    App1 --> Redis
+    App2 --> Redis
+    App3 --> Redis
+
     App1 --> PG
-    App1 --> ES
 
     style LB fill:#74c0fc,stroke:#1971c2,color:#0c4a6e
     style App1 fill:#a8e6cf,stroke:#2d6a4f,color:#1b4332
     style App2 fill:#a8e6cf,stroke:#2d6a4f,color:#1b4332
     style App3 fill:#a8e6cf,stroke:#2d6a4f,color:#1b4332
-    style NATS fill:#da77f2,stroke:#ae3ec9,color:#581c87
+    style Redis fill:#ff6b6b,stroke:#c92a2a,color:#7f1d1d
     style PG fill:#69db7c,stroke:#2f9e44,color:#14532d
-    style ES fill:#fcc419,stroke:#fab005,color:#713f12
 ```
 
 **Current Deployment:** Single instance (sufficient for assignment)  
-**Scale Trigger:** When traffic exceeds ~500 req/sec
-
----
-
-## Protobuf Schemas
-
-### Events
-
-```protobuf
-// proto/events/content.proto
-syntax = "proto3";
-package thmanyah.events;
-
-import "google/protobuf/timestamp.proto";
-
-message ContentPublished {
-  string content_id = 1;
-  string program_id = 2;
-  string title = 3;
-  string description = 4;
-  string type = 5;
-  string category = 6;
-  string language = 7;
-  ContentMetadata metadata = 8;
-  google.protobuf.Timestamp published_at = 9;
-}
-
-message ContentUpdated {
-  string content_id = 1;
-  string program_id = 2;
-  string status = 3;
-  repeated string updated_fields = 4;
-  google.protobuf.Timestamp updated_at = 5;
-}
-
-message ContentArchived {
-  string content_id = 1;
-  string program_id = 2;
-  google.protobuf.Timestamp archived_at = 3;
-}
-
-message ContentDeleted {
-  string content_id = 1;
-  string program_id = 2;
-  google.protobuf.Timestamp deleted_at = 3;
-}
-
-message ContentMetadata {
-  int32 duration = 1;
-}
-```
-
-```protobuf
-// proto/events/program.proto
-syntax = "proto3";
-package thmanyah.events;
-
-import "google/protobuf/timestamp.proto";
-
-message ProgramUpdated {
-  string program_id = 1;
-  repeated string updated_fields = 2;
-  google.protobuf.Timestamp updated_at = 3;
-}
-
-message ProgramDeleted {
-  string program_id = 1;
-  google.protobuf.Timestamp deleted_at = 2;
-}
-```
-
-### Cache Values
-
-```protobuf
-// proto/cache/content.proto
-syntax = "proto3";
-package thmanyah.cache;
-
-import "google/protobuf/timestamp.proto";
-
-message CachedContent {
-  string id = 1;
-  string title = 2;
-  string description = 3;
-  string type = 4;
-  string category = 5;
-  string language = 6;
-  CachedProgram program = 7;
-  ContentMetadata metadata = 8;
-  google.protobuf.Timestamp published_at = 9;
-}
-
-message CachedProgram {
-  string id = 1;
-  string title = 2;
-  string type = 3;
-}
-
-message CachedSearchResult {
-  repeated CachedContent items = 1;
-  int32 total = 2;
-  int32 took_ms = 3;
-  google.protobuf.Timestamp cached_at = 4;
-}
-```
+**Scale Path:** When traffic exceeds ~500 req/sec, add instances behind load balancer
 
 ---
 
@@ -800,101 +1095,158 @@ message CachedSearchResult {
 
 ```
 src/
-├── modules/
-│   ├── content/                    # Core Domain Module
-│   │   ├── domain/
-│   │   │   ├── entities/
-│   │   │   │   ├── program.entity.ts
-│   │   │   │   └── content.entity.ts
-│   │   │   ├── enums/
-│   │   │   └── events/
-│   │   ├── application/
-│   │   │   ├── services/
-│   │   │   └── interfaces/
-│   │   ├── infrastructure/
-│   │   │   └── repositories/
-│   │   └── content.module.ts
-│   │
-│   ├── cms/                        # CMS Module (REST)
-│   │   ├── controllers/
-│   │   ├── dto/
-│   │   └── cms.module.ts
-│   │
-│   ├── discovery/                  # Discovery Module (GraphQL)
-│   │   ├── resolvers/
-│   │   ├── dto/
-│   │   ├── services/
-│   │   └── discovery.module.ts
-│   │
-│   └── ingestion/                  # Ingestion Module
-│       ├── strategies/
-│       ├── controllers/
-│       └── ingestion.module.ts
+├── domain/                         # 💎 Core Domain (zero framework deps)
+│   ├── entities/
+│   │   ├── program.entity.ts       # Pure domain entity
+│   │   ├── content.entity.ts       # Pure domain entity
+│   │   └── index.ts
+│   ├── events/
+│   │   ├── domain-event.ts         # Base event class
+│   │   ├── content.events.ts       # Content domain events
+│   │   ├── program.events.ts       # Program domain events
+│   │   └── index.ts
+│   ├── ports/
+│   │   ├── content.repository.port.ts
+│   │   ├── program.repository.port.ts
+│   │   ├── event-publisher.port.ts
+│   │   ├── cache.port.ts
+│   │   └── index.ts
+│   ├── services/
+│   │   ├── content.service.ts      # Content use cases
+│   │   ├── program.service.ts      # Program use cases
+│   │   └── index.ts
+│   └── domain.module.ts
 │
-├── infrastructure/
-│   ├── database/
-│   ├── elasticsearch/
-│   ├── nats/
-│   └── event-bus/
+├── cms/                            # ✏️ CMS Adapter (REST API)
+│   ├── controllers/
+│   │   ├── program.controller.ts
+│   │   ├── content.controller.ts
+│   │   └── import.controller.ts
+│   ├── dto/
+│   │   ├── create-program.dto.ts
+│   │   ├── create-content.dto.ts
+│   │   └── ...
+│   └── cms.module.ts
 │
-├── generated/                      # Protobuf generated code
-├── common/
+├── discovery/                      # 🔍 Discovery Adapter (GraphQL)
+│   ├── resolvers/
+│   │   ├── program.resolver.ts
+│   │   ├── content.resolver.ts
+│   │   └── search.resolver.ts
+│   ├── services/
+│   │   ├── search.service.ts       # PostgreSQL full-text search
+│   │   └── cache.service.ts        # Redis caching
+│   ├── handlers/
+│   │   └── cache-invalidation.handler.ts
+│   ├── dto/
+│   └── discovery.module.ts
+│
+├── ingestion/                      # 📥 Ingestion Adapter (Import)
+│   ├── strategies/
+│   │   ├── import.strategy.ts      # Strategy interface
+│   │   └── mock-youtube.strategy.ts
+│   ├── controllers/
+│   │   └── import.controller.ts
+│   ├── services/
+│   │   └── import.service.ts
+│   └── ingestion.module.ts
+│
+├── infrastructure/                 # ⚙️ Technical Implementations
+│   ├── persistence/
+│   │   ├── entities/               # TypeORM entities (DB mapping)
+│   │   │   ├── program.orm-entity.ts
+│   │   │   └── content.orm-entity.ts
+│   │   ├── repositories/
+│   │   │   ├── program.repository.ts
+│   │   │   └── content.repository.ts
+│   │   └── persistence.module.ts
+│   ├── cache/
+│   │   ├── redis.adapter.ts
+│   │   └── cache.module.ts
+│   ├── events/
+│   │   ├── event-emitter.adapter.ts
+│   │   └── events.module.ts
+│   └── migrations/
+│       └── 1704067200000-CreateProgramsAndContent.ts
+│
 ├── config/
+│   ├── app.config.ts
+│   ├── database.config.ts
+│   └── redis.config.ts
+│
 ├── app.module.ts
 └── main.ts
-
-proto/                              # Protobuf source files
-├── events/
-├── cache/
-└── ingestion/
 ```
+
+### Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| `domain/entities/` are **pure classes** | No TypeORM decorators — domain stays framework-free |
+| `infrastructure/persistence/entities/` are **ORM entities** | Separate DB mapping from domain logic |
+| Ports define **interfaces** | Allows swapping implementations (test/prod) |
+| Each adapter has its own **module** | Clear boundaries, can be extracted to microservices |
 
 ---
 
 ## Trade-offs & Alternatives
 
-### Decisions Made
+### Simplifications Made (Interview Scope)
 
-| Decision | Alternative Considered | Why We Chose This |
-|----------|----------------------|-------------------|
-| **Modular Monolith** | Microservices | Simpler for assignment scope, clear boundaries, can extract later |
-| **NATS** | Redis + RabbitMQ | Unified solution for events + caching, JetStream persistence |
-| **PostgreSQL + ES** | MongoDB + Atlas Search | Assignment mentions PostgreSQL, ES is industry standard |
-| **REST for CMS** | GraphQL for both | REST is simpler for CRUD, GraphQL shines for flexible reads |
-| **JSONB metadata** | Separate tables per type | Extensible without migrations, validates at app layer |
+| Original Design | Simplified To | Why |
+|-----------------|---------------|-----|
+| NATS JetStream | In-process EventEmitter | No external messaging infra needed for demo |
+| Elasticsearch | PostgreSQL Full-Text Search | One less service, sufficient for scope |
+| NATS KV | Redis | Standard, well-known cache solution |
+| Protobuf schemas | TypeScript classes | No code generation, simpler DX |
+| Job tracking system | Sync idempotent import | Simpler flow, no job state management |
+| Separate core/application | Merged `domain/` | Fewer folders, same principles |
 
-### Future Improvements
+### Decisions Retained
 
-1. **Authentication/Authorization** — Add JWT auth for CMS, rate limiting for Discovery
-2. **Real-time Sync** — WebSockets or SSE for live content updates
-3. **Advanced Search** — Faceted search, autocomplete, typo tolerance
-4. **Monitoring** — OpenTelemetry tracing, Prometheus metrics
-5. **CI/CD** — GitHub Actions for testing, Docker for deployment
+| Decision             | Alternative Considered   | Why We Kept This                                                  |
+| -------------------- | ------------------------ | ----------------------------------------------------------------- |
+| **Modular Monolith** | Microservices            | Simpler for assignment scope, clear boundaries, can extract later |
+| **PostgreSQL**       | MongoDB                  | Assignment mentions PostgreSQL, relational model fits             |
+| **REST for CMS**     | GraphQL for both         | REST is simpler for CRUD, GraphQL shines for flexible reads       |
+| **JSONB metadata**   | Separate tables per type | Extensible without migrations, validates at app layer             |
+| **Strategy Pattern** | Hard-coded importers     | Shows extensibility, easy to add RSS/Spotify later                |
+
+### Production Evolution Path
+
+If this were to go to production, we would consider:
+
+| Current | Production Upgrade | Trigger |
+|---------|-------------------|---------|
+| EventEmitter | NATS JetStream / Kafka | Need event persistence, replay, multi-instance |
+| PostgreSQL FTS | Elasticsearch | Need typo tolerance, faceted search, >1M docs |
+| Single Redis | Redis Cluster | Cache size > single node memory |
+| Mock YouTube | Real YouTube API | Actual content import needed |
 
 ### Known Limitations
 
-- No user management (out of scope)
+- No user management/authentication (out of scope)
 - Single region deployment
-- YouTube importer requires API quota management
+- Mock importer (no real YouTube API integration)
 - Cache invalidation is eventually consistent
+- No rate limiting on public API
 
 ---
 
 ## Deployment
 
-### Infrastructure (DigitalOcean)
+### Infrastructure (Development)
 
-| Component | Specification |
-|-----------|---------------|
-| Droplet | 4GB RAM, 2 vCPU |
-| PostgreSQL | Self-hosted or Managed |
-| Elasticsearch | Self-hosted (2GB heap) |
-| NATS | Self-hosted (minimal footprint) |
+| Component  | Purpose                              |
+| ---------- | ------------------------------------ |
+| PostgreSQL | Source of truth + full-text search   |
+| Redis      | Caching layer                        |
+| Node.js    | NestJS application                   |
 
 ### Docker Compose (Development)
 
 ```yaml
-version: '3.8'
+version: "3.8"
 services:
   app:
     build: .
@@ -902,12 +1254,10 @@ services:
       - "3000:3000"
     depends_on:
       - postgres
-      - elasticsearch
-      - nats
+      - redis
     environment:
       - DATABASE_URL=postgres://user:pass@postgres:5432/thmanyah
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - NATS_URL=nats://nats:4222
+      - REDIS_URL=redis://redis:6379
 
   postgres:
     image: postgres:15
@@ -917,39 +1267,57 @@ services:
       POSTGRES_PASSWORD: pass
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
-  elasticsearch:
-    image: elasticsearch:8.11.0
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
     volumes:
-      - es_data:/usr/share/elasticsearch/data
-
-  nats:
-    image: nats:2.10
-    command: ["--jetstream", "--store_dir=/data"]
-    volumes:
-      - nats_data:/data
+      - redis_data:/data
 
 volumes:
   postgres_data:
-  es_data:
-  nats_data:
+  redis_data:
+```
+
+### Running the Application
+
+```bash
+# Start infrastructure
+docker-compose up -d postgres redis
+
+# Run migrations
+npm run migration:run
+
+# Start application
+npm run start:dev
+
+# Access
+# - CMS REST API: http://localhost:3000/api/cms
+# - Discovery GraphQL: http://localhost:3000/graphql
 ```
 
 ---
 
 ## Summary
 
-This design delivers a **scalable content management and discovery system** with:
+This design delivers a **clean, demonstrable content management and discovery system** with:
 
-- ✅ Clean modular architecture following SOLID principles
-- ✅ Optimized read path for 10M users/hour
-- ✅ Extensible data model for future content types
-- ✅ Event-driven communication for loose coupling
-- ✅ YouTube import capability with strategy pattern
-- ✅ Production-ready infrastructure choices
+- ✅ **Clean Architecture** — Pure domain layer with ports/adapters pattern
+- ✅ **SOLID Principles** — Each component has single responsibility, open for extension
+- ✅ **Simple Infrastructure** — Just PostgreSQL + Redis (easy to run locally)
+- ✅ **Full-Stack Competency** — REST API + GraphQL + Caching + Search
+- ✅ **Extensible Design** — Strategy pattern for importers, event-driven cache invalidation
+- ✅ **Production-Ready Patterns** — Even though simplified, patterns scale
 
-The system is designed to start simple and evolve — the modular monolith can be split into microservices as traffic and team size grow.
+### What This Design Demonstrates
+
+1. **Architectural Thinking** — Clean separation of concerns, dependency inversion
+2. **Pragmatic Engineering** — Knowing when NOT to over-engineer
+3. **Domain-Driven Design** — Rich domain entities, typed events
+4. **Full-Stack Skills** — REST, GraphQL, PostgreSQL, Redis, TypeScript
+5. **Testability** — Pure domain, injectable ports, mockable strategies
+
+The system is designed to start simple and evolve — the modular monolith can be split into microservices, and infrastructure can be upgraded as traffic and requirements grow.

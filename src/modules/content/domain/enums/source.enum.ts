@@ -1,5 +1,5 @@
 export enum Source {
-  MANUAL = 'manual',
-  YOUTUBE = 'youtube',
-  RSS = 'rss',
+  MANUAL = "manual",
+  YOUTUBE = "youtube",
+  RSS = "rss",
 }

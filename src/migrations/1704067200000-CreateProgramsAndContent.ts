@@ -1,7 +1,7 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class CreateProgramsAndContent1704067200000 implements MigrationInterface {
-  name = 'CreateProgramsAndContent1704067200000';
+  name = "CreateProgramsAndContent1704067200000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create enums

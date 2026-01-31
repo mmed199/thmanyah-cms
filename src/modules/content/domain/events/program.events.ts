@@ -1,4 +1,4 @@
-import { DomainEvent } from './domain-event';
+import { DomainEvent } from "./domain-event";
 
 export class ProgramUpdatedEvent extends DomainEvent {
   constructor(
@@ -9,7 +9,7 @@ export class ProgramUpdatedEvent extends DomainEvent {
   }
 
   get eventName(): string {
-    return 'program.updated';
+    return "program.updated";
   }
 }
 
@@ -19,6 +19,6 @@ export class ProgramDeletedEvent extends DomainEvent {
   }
 
   get eventName(): string {
-    return 'program.deleted';
+    return "program.deleted";
   }
 }

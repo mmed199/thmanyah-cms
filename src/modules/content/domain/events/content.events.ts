@@ -1,7 +1,7 @@
-import { DomainEvent } from './domain-event';
-import { ContentType } from '../enums/content-type.enum';
-import { Category } from '../enums/category.enum';
-import { ContentMetadata } from '../entities/content.entity';
+import { DomainEvent } from "./domain-event";
+import { ContentType } from "../enums/content-type.enum";
+import { Category } from "../enums/category.enum";
+import { ContentMetadata } from "../entities/content.entity";
 
 export class ContentCreatedEvent extends DomainEvent {
   constructor(
@@ -16,7 +16,7 @@ export class ContentCreatedEvent extends DomainEvent {
   }
 
   get eventName(): string {
-    return 'content.created';
+    return "content.created";
   }
 }
 
@@ -31,7 +31,7 @@ export class ContentUpdatedEvent extends DomainEvent {
   }
 
   get eventName(): string {
-    return 'content.updated';
+    return "content.updated";
   }
 }
 
@@ -51,7 +51,7 @@ export class ContentPublishedEvent extends DomainEvent {
   }
 
   get eventName(): string {
-    return 'content.published';
+    return "content.published";
   }
 }
 
@@ -64,7 +64,7 @@ export class ContentArchivedEvent extends DomainEvent {
   }
 
   get eventName(): string {
-    return 'content.archived';
+    return "content.archived";
   }
 }
 
@@ -77,6 +77,6 @@ export class ContentDeletedEvent extends DomainEvent {
   }
 
   get eventName(): string {
-    return 'content.deleted';
+    return "content.deleted";
   }
 }

@@ -1,7 +1,7 @@
-import { Program, ProgramMetadata } from '../../domain/entities/program.entity';
-import { ProgramType } from '../../domain/enums/program-type.enum';
-import { Category } from '../../domain/enums/category.enum';
-import { Status } from '../../domain/enums/status.enum';
+import { Program, ProgramMetadata } from "../../domain/entities/program.entity";
+import { ProgramType } from "../../domain/enums/program-type.enum";
+import { Category } from "../../domain/enums/category.enum";
+import { Status } from "../../domain/enums/status.enum";
 
 export interface CreateProgramData {
   title: string;
@@ -42,7 +42,7 @@ export interface PaginatedResult<T> {
   offset: number;
 }
 
-export const PROGRAM_REPOSITORY = Symbol('PROGRAM_REPOSITORY');
+export const PROGRAM_REPOSITORY = Symbol("PROGRAM_REPOSITORY");
 
 export interface IProgramRepository {
   create(data: CreateProgramData): Promise<Program>;
@@ -50,8 +50,5 @@ export interface IProgramRepository {
   findByIdWithContents(id: string): Promise<Program | null>;
   update(id: string, data: UpdateProgramData): Promise<Program | null>;
   delete(id: string): Promise<boolean>;
-  findAll(
-    filter: ProgramFilter,
-    pagination: PaginationOptions,
-  ): Promise<PaginatedResult<Program>>;
+  findAll(filter: ProgramFilter, pagination: PaginationOptions): Promise<PaginatedResult<Program>>;
 }

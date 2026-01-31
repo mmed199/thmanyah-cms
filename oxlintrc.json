@@ -1,0 +1,14 @@
+{
+  "plugins": ["typescript"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "no-explicit-any": "warn",
+    "no-floating-promises": "warn",
+    "no-unsafe-argument": "warn",
+    "prefer-const": "warn",
+    "no-var": "error"
+  },
+  "ignorePatterns": ["node_modules", "dist", "build"]
+}

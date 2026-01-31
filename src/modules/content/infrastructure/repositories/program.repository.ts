@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
-import { Program } from '../../domain/entities/program.entity';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, FindOptionsWhere } from "typeorm";
+import { Program } from "../../domain/entities/program.entity";
 import {
   IProgramRepository,
   CreateProgramData,
@@ -9,7 +9,7 @@ import {
   ProgramFilter,
   PaginationOptions,
   PaginatedResult,
-} from '../../application/interfaces/program.repository.interface';
+} from "../../application/interfaces/program.repository.interface";
 
 @Injectable()
 export class ProgramRepository implements IProgramRepository {
@@ -24,7 +24,7 @@ export class ProgramRepository implements IProgramRepository {
       description: data.description,
       type: data.type,
       category: data.category,
-      language: data.language || 'ar',
+      language: data.language || "ar",
       status: data.status,
       metadata: data.metadata,
     });
@@ -38,7 +38,7 @@ export class ProgramRepository implements IProgramRepository {
   async findByIdWithContents(id: string): Promise<Program | null> {
     return this.repository.findOne({
       where: { id },
-      relations: ['contents'],
+      relations: ["contents"],
     });
   }
 
@@ -80,7 +80,7 @@ export class ProgramRepository implements IProgramRepository {
       where,
       take: pagination.limit,
       skip: pagination.offset,
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
 
     return {

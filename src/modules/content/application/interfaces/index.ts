@@ -1,4 +1,4 @@
-export { PROGRAM_REPOSITORY } from './program.repository.interface';
+export { PROGRAM_REPOSITORY } from "./program.repository.interface";
 export type {
   IProgramRepository,
   CreateProgramData,
@@ -6,11 +6,11 @@ export type {
   ProgramFilter,
   PaginationOptions,
   PaginatedResult,
-} from './program.repository.interface';
-export { CONTENT_REPOSITORY } from './content.repository.interface';
+} from "./program.repository.interface";
+export { CONTENT_REPOSITORY } from "./content.repository.interface";
 export type {
   IContentRepository,
   CreateContentData,
   UpdateContentData,
   ContentFilter,
-} from './content.repository.interface';
+} from "./content.repository.interface";

@@ -1,12 +1,7 @@
-import {
-  Injectable,
-  Inject,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Content } from '../../domain/entities/content.entity';
-import { Status } from '../../domain/enums/status.enum';
+import { Injectable, Inject, NotFoundException, BadRequestException } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { Content } from "../../domain/entities/content.entity";
+import { Status } from "../../domain/enums/status.enum";
 import {
   CONTENT_REPOSITORY,
   CreateContentData,
@@ -14,19 +9,17 @@ import {
   ContentFilter,
   PaginationOptions,
   PaginatedResult,
-} from '../interfaces/content.repository.interface';
-import type { IContentRepository } from '../interfaces/content.repository.interface';
-import {
-  PROGRAM_REPOSITORY,
-} from '../interfaces/program.repository.interface';
-import type { IProgramRepository } from '../interfaces/program.repository.interface';
+} from "../interfaces/content.repository.interface";
+import type { IContentRepository } from "../interfaces/content.repository.interface";
+import { PROGRAM_REPOSITORY } from "../interfaces/program.repository.interface";
+import type { IProgramRepository } from "../interfaces/program.repository.interface";
 import {
   ContentCreatedEvent,
   ContentUpdatedEvent,
   ContentPublishedEvent,
   ContentArchivedEvent,
   ContentDeletedEvent,
-} from '../../domain/events';
+} from "../../domain/events";
 
 @Injectable()
 export class ContentService {
@@ -43,9 +36,7 @@ export class ContentService {
     if (data.programId) {
       const program = await this.programRepository.findById(data.programId);
       if (!program) {
-        throw new NotFoundException(
-          `Program with ID ${data.programId} not found`,
-        );
+        throw new NotFoundException(`Program with ID ${data.programId} not found`);
       }
     }
 
@@ -53,7 +44,7 @@ export class ContentService {
 
     // Emit event (but content is draft, so Discovery won't index it)
     this.eventEmitter.emit(
-      'content.created',
+      "content.created",
       new ContentCreatedEvent(
         content.id,
         content.programId,
@@ -93,9 +84,7 @@ export class ContentService {
     if (data.programId && data.programId !== existingContent.programId) {
       const program = await this.programRepository.findById(data.programId);
       if (!program) {
-        throw new NotFoundException(
-          `Program with ID ${data.programId} not found`,
-        );
+        throw new NotFoundException(`Program with ID ${data.programId} not found`);
       }
     }
 
@@ -118,12 +107,7 @@ export class ContentService {
     }
 
     // Emit appropriate events based on status change
-    this.emitContentEvents(
-      existingContent,
-      updatedContent,
-      previousStatus,
-      Object.keys(data),
-    );
+    this.emitContentEvents(existingContent, updatedContent, previousStatus, Object.keys(data));
 
     return updatedContent;
   }
@@ -140,10 +124,7 @@ export class ContentService {
     }
 
     // Emit event for Discovery module to remove from index (if was published)
-    this.eventEmitter.emit(
-      'content.deleted',
-      new ContentDeletedEvent(id, content.programId),
-    );
+    this.eventEmitter.emit("content.deleted", new ContentDeletedEvent(id, content.programId));
   }
 
   async findByProgramId(
@@ -168,10 +149,7 @@ export class ContentService {
     return this.update(id, { status: Status.ARCHIVED });
   }
 
-  private validateStatusTransition(
-    currentStatus: Status,
-    newStatus: Status,
-  ): void {
+  private validateStatusTransition(currentStatus: Status, newStatus: Status): void {
     const allowedTransitions: Record<Status, Status[]> = {
       [Status.DRAFT]: [Status.PUBLISHED],
       [Status.PUBLISHED]: [Status.ARCHIVED, Status.DRAFT],
@@ -196,7 +174,7 @@ export class ContentService {
     // Content was just published
     if (previousStatus !== Status.PUBLISHED && newStatus === Status.PUBLISHED) {
       this.eventEmitter.emit(
-        'content.published',
+        "content.published",
         new ContentPublishedEvent(
           updatedContent.id,
           updatedContent.programId,
@@ -215,7 +193,7 @@ export class ContentService {
     // Content was archived (remove from index)
     if (previousStatus === Status.PUBLISHED && newStatus === Status.ARCHIVED) {
       this.eventEmitter.emit(
-        'content.archived',
+        "content.archived",
         new ContentArchivedEvent(updatedContent.id, updatedContent.programId),
       );
       return;
@@ -224,7 +202,7 @@ export class ContentService {
     // Content was updated while published (reindex)
     if (newStatus === Status.PUBLISHED) {
       this.eventEmitter.emit(
-        'content.updated',
+        "content.updated",
         new ContentUpdatedEvent(
           updatedContent.id,
           updatedContent.programId,

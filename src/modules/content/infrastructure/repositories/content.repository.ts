@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
-import { Content } from '../../domain/entities/content.entity';
-import { Status } from '../../domain/enums/status.enum';
-import { Source } from '../../domain/enums/source.enum';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, FindOptionsWhere } from "typeorm";
+import { Content } from "../../domain/entities/content.entity";
+import { Status } from "../../domain/enums/status.enum";
+import { Source } from "../../domain/enums/source.enum";
 import {
   IContentRepository,
   CreateContentData,
@@ -11,7 +11,7 @@ import {
   ContentFilter,
   PaginationOptions,
   PaginatedResult,
-} from '../../application/interfaces/content.repository.interface';
+} from "../../application/interfaces/content.repository.interface";
 
 @Injectable()
 export class ContentRepository implements IContentRepository {
@@ -27,7 +27,7 @@ export class ContentRepository implements IContentRepository {
       description: data.description,
       type: data.type,
       category: data.category,
-      language: data.language || 'ar',
+      language: data.language || "ar",
       status: data.status,
       source: data.source || Source.MANUAL,
       externalId: data.externalId || null,
@@ -44,7 +44,7 @@ export class ContentRepository implements IContentRepository {
   async findByIdWithProgram(id: string): Promise<Content | null> {
     return this.repository.findOne({
       where: { id },
-      relations: ['program'],
+      relations: ["program"],
     });
   }
 
@@ -71,7 +71,7 @@ export class ContentRepository implements IContentRepository {
       where: { programId },
       take: pagination.limit,
       skip: pagination.offset,
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
 
     return {
@@ -111,8 +111,8 @@ export class ContentRepository implements IContentRepository {
       where,
       take: pagination.limit,
       skip: pagination.offset,
-      order: { createdAt: 'DESC' },
-      relations: ['program'],
+      order: { createdAt: "DESC" },
+      relations: ["program"],
     });
 
     return {
@@ -123,10 +123,7 @@ export class ContentRepository implements IContentRepository {
     };
   }
 
-  async findByExternalId(
-    source: Source,
-    externalId: string,
-  ): Promise<Content | null> {
+  async findByExternalId(source: Source, externalId: string): Promise<Content | null> {
     return this.repository.findOne({
       where: { source, externalId },
     });

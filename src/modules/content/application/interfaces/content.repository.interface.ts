@@ -1,8 +1,8 @@
-import { Content, ContentMetadata } from '../../domain/entities/content.entity';
-import { ContentType } from '../../domain/enums/content-type.enum';
-import { Category } from '../../domain/enums/category.enum';
-import { Status } from '../../domain/enums/status.enum';
-import { Source } from '../../domain/enums/source.enum';
+import { Content, ContentMetadata } from "../../domain/entities/content.entity";
+import { ContentType } from "../../domain/enums/content-type.enum";
+import { Category } from "../../domain/enums/category.enum";
+import { Status } from "../../domain/enums/status.enum";
+import { Source } from "../../domain/enums/source.enum";
 
 export interface CreateContentData {
   programId?: string | null;
@@ -53,7 +53,7 @@ export interface PaginatedResult<T> {
   offset: number;
 }
 
-export const CONTENT_REPOSITORY = Symbol('CONTENT_REPOSITORY');
+export const CONTENT_REPOSITORY = Symbol("CONTENT_REPOSITORY");
 
 export interface IContentRepository {
   create(data: CreateContentData): Promise<Content>;
@@ -65,10 +65,7 @@ export interface IContentRepository {
     programId: string,
     pagination: PaginationOptions,
   ): Promise<PaginatedResult<Content>>;
-  findAll(
-    filter: ContentFilter,
-    pagination: PaginationOptions,
-  ): Promise<PaginatedResult<Content>>;
+  findAll(filter: ContentFilter, pagination: PaginationOptions): Promise<PaginatedResult<Content>>;
   findByExternalId(source: Source, externalId: string): Promise<Content | null>;
   findPublishedByProgramId(programId: string): Promise<Content[]>;
 }

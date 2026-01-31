@@ -1,12 +1,7 @@
-import {
-  Injectable,
-  Inject,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Program } from '../../domain/entities/program.entity';
-import { Status } from '../../domain/enums/status.enum';
+import { Injectable, Inject, NotFoundException, BadRequestException } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { Program } from "../../domain/entities/program.entity";
+import { Status } from "../../domain/enums/status.enum";
 import {
   PROGRAM_REPOSITORY,
   CreateProgramData,
@@ -14,9 +9,9 @@ import {
   ProgramFilter,
   PaginationOptions,
   PaginatedResult,
-} from '../interfaces/program.repository.interface';
-import type { IProgramRepository } from '../interfaces/program.repository.interface';
-import { ProgramUpdatedEvent, ProgramDeletedEvent } from '../../domain/events';
+} from "../interfaces/program.repository.interface";
+import type { IProgramRepository } from "../interfaces/program.repository.interface";
+import { ProgramUpdatedEvent, ProgramDeletedEvent } from "../../domain/events";
 
 @Injectable()
 export class ProgramService {
@@ -64,10 +59,7 @@ export class ProgramService {
 
     // Emit event for Discovery module to reindex published content
     const updatedFields = Object.keys(data);
-    this.eventEmitter.emit(
-      'program.updated',
-      new ProgramUpdatedEvent(id, updatedFields),
-    );
+    this.eventEmitter.emit("program.updated", new ProgramUpdatedEvent(id, updatedFields));
 
     return updatedProgram;
   }
@@ -84,7 +76,7 @@ export class ProgramService {
     }
 
     // Emit event for Discovery module to remove content from index
-    this.eventEmitter.emit('program.deleted', new ProgramDeletedEvent(id));
+    this.eventEmitter.emit("program.deleted", new ProgramDeletedEvent(id));
   }
 
   async findAll(
@@ -94,10 +86,7 @@ export class ProgramService {
     return this.programRepository.findAll(filter, pagination);
   }
 
-  private validateStatusTransition(
-    currentStatus: Status,
-    newStatus: Status,
-  ): void {
+  private validateStatusTransition(currentStatus: Status, newStatus: Status): void {
     const allowedTransitions: Record<Status, Status[]> = {
       [Status.DRAFT]: [Status.PUBLISHED],
       [Status.PUBLISHED]: [Status.ARCHIVED, Status.DRAFT],
