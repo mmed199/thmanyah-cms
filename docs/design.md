@@ -99,23 +99,23 @@ We chose a **modular monolith** with **clean architecture principles** to:
 
 ### SOLID Compliance
 
-| Principle | Implementation |
-|-----------|---------------|
-| **S** — Single Responsibility | Each layer has one reason to change |
-| **O** — Open/Closed | Import strategies extensible without modification |
-| **L** — Liskov Substitution | Repository ports can be swapped (test/prod) |
-| **I** — Interface Segregation | Small, focused ports (Repository, EventPublisher, Cache) |
-| **D** — Dependency Inversion | Domain depends on abstractions (ports), not implementations |
+| Principle                     | Implementation                                              |
+| ----------------------------- | ----------------------------------------------------------- |
+| **S** — Single Responsibility | Each layer has one reason to change                         |
+| **O** — Open/Closed           | Import strategies extensible without modification           |
+| **L** — Liskov Substitution   | Repository ports can be swapped (test/prod)                 |
+| **I** — Interface Segregation | Small, focused ports (Repository, EventPublisher, Cache)    |
+| **D** — Dependency Inversion  | Domain depends on abstractions (ports), not implementations |
 
 ### Key Architectural Decisions
 
-| Decision           | Choice                               | Rationale                                           |
-| ------------------ | ------------------------------------ | --------------------------------------------------- |
-| Architecture Style | Modular Monolith + Clean Architecture | Simpler ops, clear boundaries, testable domain      |
-| Communication      | In-process EventEmitter              | No external messaging infrastructure needed         |
-| CQRS-lite          | CMS (writes) / Discovery (reads)     | Optimize each path independently                    |
-| Search             | PostgreSQL Full-Text Search          | Sufficient for scope, one less service to manage    |
-| Caching            | Redis                                | Industry standard, simple key-value with TTL        |
+| Decision           | Choice                                | Rationale                                        |
+| ------------------ | ------------------------------------- | ------------------------------------------------ |
+| Architecture Style | Modular Monolith + Clean Architecture | Simpler ops, clear boundaries, testable domain   |
+| Communication      | In-process EventEmitter               | No external messaging infrastructure needed      |
+| CQRS-lite          | CMS (writes) / Discovery (reads)      | Optimize each path independently                 |
+| Search             | PostgreSQL Full-Text Search           | Sufficient for scope, one less service to manage |
+| Caching            | Redis                                 | Industry standard, simple key-value with TTL     |
 
 ### Module Boundaries & Dependency Flow
 
@@ -148,15 +148,15 @@ flowchart TB
     CMS --> Services
     Discovery --> Services
     Ingestion --> Services
-    
+
     Services --> Ports
     Services --> Entities
     Services --> Events
-    
+
     Repos -.->|implements| Ports
     Cache -.->|implements| Ports
     EventBus -.->|implements| Ports
-    
+
     Repos --> PG
     Cache --> Redis
 
@@ -186,25 +186,25 @@ flowchart TB
 
 ## Technology Stack
 
-| Layer             | Technology              | Purpose                                  |
-| ----------------- | ----------------------- | ---------------------------------------- |
-| **Runtime**       | Node.js + TypeScript    | Type safety, ecosystem                   |
-| **Framework**     | NestJS                  | Modular architecture, DI, decorators     |
-| **Database**      | PostgreSQL              | Source of truth, relational model        |
-| **Search**        | PostgreSQL Full-Text    | Full-text search with GIN index          |
-| **Caching**       | Redis                   | Low-latency key-value caching            |
-| **Events**        | NestJS EventEmitter     | In-process domain event publishing       |
-| **CMS API**       | REST                    | Standard CRUD operations                 |
-| **Discovery API** | GraphQL                 | Flexible queries for frontend            |
+| Layer             | Technology           | Purpose                              |
+| ----------------- | -------------------- | ------------------------------------ |
+| **Runtime**       | Node.js + TypeScript | Type safety, ecosystem               |
+| **Framework**     | NestJS               | Modular architecture, DI, decorators |
+| **Database**      | PostgreSQL           | Source of truth, relational model    |
+| **Search**        | PostgreSQL Full-Text | Full-text search with GIN index      |
+| **Caching**       | Redis                | Low-latency key-value caching        |
+| **Events**        | NestJS EventEmitter  | In-process domain event publishing   |
+| **CMS API**       | REST                 | Standard CRUD operations             |
+| **Discovery API** | GraphQL              | Flexible queries for frontend        |
 
 ### Simplification Rationale
 
-| Original Choice | Simplified To | Why |
-|-----------------|---------------|-----|
-| NATS JetStream | EventEmitter | No external messaging infra needed |
-| Elasticsearch | PostgreSQL FTS | One less service, sufficient for demo |
-| NATS KV | Redis | Standard, well-known cache solution |
-| Protobuf | TypeScript classes | No code generation, simpler DX |
+| Original Choice | Simplified To      | Why                                   |
+| --------------- | ------------------ | ------------------------------------- |
+| NATS JetStream  | EventEmitter       | No external messaging infra needed    |
+| Elasticsearch   | PostgreSQL FTS     | One less service, sufficient for demo |
+| NATS KV         | Redis              | Standard, well-known cache solution   |
+| Protobuf        | TypeScript classes | No code generation, simpler DX        |
 
 ---
 
@@ -254,7 +254,7 @@ The `search_vector` column enables PostgreSQL full-text search:
 
 ```sql
 -- Generated column for full-text search
-ALTER TABLE content ADD COLUMN search_vector tsvector 
+ALTER TABLE content ADD COLUMN search_vector tsvector
   GENERATED ALWAYS AS (
     to_tsvector('simple', coalesce(title,'') || ' ' || coalesce(description,''))
   ) STORED;
@@ -366,7 +366,7 @@ export class Content {
 
   publish(): void {
     if (this.status === Status.ARCHIVED) {
-      throw new Error('Cannot publish archived content');
+      throw new Error("Cannot publish archived content");
     }
     this.status = Status.PUBLISHED;
     this.publishedAt = new Date();
@@ -431,7 +431,7 @@ export class ContentService {
   async publish(id: string): Promise<Content> {
     const content = await this.contentRepo.findById(id);
     if (!content) throw new NotFoundException();
-    
+
     content.publish(); // Domain logic
     const saved = await this.contentRepo.save(content);
     this.eventPublisher.publish(new ContentPublished(saved.id, saved.programId, saved.title));
@@ -484,30 +484,39 @@ export class SearchService {
     private readonly contentRepo: Repository<ContentEntity>,
   ) {}
 
-  async search(query: string, filters: SearchFilters, pagination: Pagination): Promise<SearchResult> {
+  async search(
+    query: string,
+    filters: SearchFilters,
+    pagination: Pagination,
+  ): Promise<SearchResult> {
     const start = Date.now();
-    
-    const qb = this.contentRepo.createQueryBuilder('c')
-      .where('c.status = :status', { status: Status.PUBLISHED });
+
+    const qb = this.contentRepo
+      .createQueryBuilder("c")
+      .where("c.status = :status", { status: Status.PUBLISHED });
 
     // Full-text search
     if (query) {
-      qb.andWhere(`c.search_vector @@ plainto_tsquery('simple', :query)`, { query })
-        .orderBy(`ts_rank(c.search_vector, plainto_tsquery('simple', :query))`, 'DESC');
+      qb.andWhere(`c.search_vector @@ plainto_tsquery('simple', :query)`, { query }).orderBy(
+        `ts_rank(c.search_vector, plainto_tsquery('simple', :query))`,
+        "DESC",
+      );
     }
 
     // Apply filters
-    if (filters.category) qb.andWhere('c.category = :category', { category: filters.category });
-    if (filters.type) qb.andWhere('c.type = :type', { type: filters.type });
-    if (filters.language) qb.andWhere('c.language = :lang', { lang: filters.language });
-    if (filters.publishedAfter) qb.andWhere('c.publishedAt >= :after', { after: filters.publishedAfter });
-    if (filters.publishedBefore) qb.andWhere('c.publishedAt <= :before', { before: filters.publishedBefore });
+    if (filters.category) qb.andWhere("c.category = :category", { category: filters.category });
+    if (filters.type) qb.andWhere("c.type = :type", { type: filters.type });
+    if (filters.language) qb.andWhere("c.language = :lang", { lang: filters.language });
+    if (filters.publishedAfter)
+      qb.andWhere("c.publishedAt >= :after", { after: filters.publishedAfter });
+    if (filters.publishedBefore)
+      qb.andWhere("c.publishedAt <= :before", { before: filters.publishedBefore });
 
     // Pagination
     qb.skip(pagination.offset).take(pagination.limit);
 
     const [items, total] = await qb.getManyAndCount();
-    
+
     return {
       items: items.map(this.toDomain),
       total,
@@ -575,7 +584,7 @@ export class MockYouTubeStrategy implements ImportStrategy {
         description: video.description,
         type: ContentType.PODCAST_EPISODE,
         category: input.category ?? Category.TECHNOLOGY,
-        language: 'ar',
+        language: "ar",
         metadata: { duration: video.duration },
       });
       result.imported++;
@@ -588,7 +597,7 @@ export class MockYouTubeStrategy implements ImportStrategy {
     return Array.from({ length: count }, (_, i) => ({
       id: `yt-${Date.now()}-${i}`,
       title: `فنجان - الحلقة ${100 + i}`,
-      description: 'حلقة جديدة من بودكاست فنجان',
+      description: "حلقة جديدة من بودكاست فنجان",
       duration: 3600 + Math.floor(Math.random() * 1800),
     }));
   }
@@ -806,50 +815,60 @@ export abstract class DomainEvent {
 
 // domain/events/content.events.ts
 export class ContentCreated extends DomainEvent {
-  readonly eventName = 'content.created';
-  
+  readonly eventName = "content.created";
+
   constructor(
     readonly contentId: string,
     readonly programId: string | null,
-  ) { super(); }
+  ) {
+    super();
+  }
 }
 
 export class ContentPublished extends DomainEvent {
-  readonly eventName = 'content.published';
-  
+  readonly eventName = "content.published";
+
   constructor(
     readonly contentId: string,
     readonly programId: string | null,
     readonly title: string,
-  ) { super(); }
+  ) {
+    super();
+  }
 }
 
 export class ContentUpdated extends DomainEvent {
-  readonly eventName = 'content.updated';
-  
+  readonly eventName = "content.updated";
+
   constructor(
     readonly contentId: string,
     readonly programId: string | null,
     readonly updatedFields: string[],
-  ) { super(); }
+  ) {
+    super();
+  }
 }
 
 export class ContentArchived extends DomainEvent {
-  readonly eventName = 'content.archived';
-  
+  readonly eventName = "content.archived";
+
   constructor(
     readonly contentId: string,
     readonly programId: string | null,
-  ) { super(); }
+  ) {
+    super();
+  }
 }
 
 export class ContentDeleted extends DomainEvent {
-  readonly eventName = 'content.deleted';
-  
+  readonly eventName = "content.deleted";
+
   constructor(
     readonly contentId: string,
     readonly programId: string | null,
-  ) { super(); }
+  ) {
+    super();
+  }
 }
 ```
 
@@ -921,21 +940,21 @@ export class EventEmitterAdapter implements EventPublisherPort {
 // discovery/handlers/cache-invalidation.handler.ts
 @Injectable()
 export class CacheInvalidationHandler {
-  constructor(
-    @Inject(CACHE_PORT) private readonly cache: CachePort,
-  ) {}
+  constructor(@Inject(CACHE_PORT) private readonly cache: CachePort) {}
 
-  @OnEvent('content.published')
-  @OnEvent('content.updated')
-  @OnEvent('content.archived')
-  @OnEvent('content.deleted')
-  async handleContentChange(event: ContentPublished | ContentUpdated | ContentArchived | ContentDeleted) {
+  @OnEvent("content.published")
+  @OnEvent("content.updated")
+  @OnEvent("content.archived")
+  @OnEvent("content.deleted")
+  async handleContentChange(
+    event: ContentPublished | ContentUpdated | ContentArchived | ContentDeleted,
+  ) {
     await this.cache.invalidate(`content:${event.contentId}`);
-    
+
     if (event.programId) {
       await this.cache.invalidate(`program:${event.programId}:contents`);
     }
-    
+
     // Invalidate search cache (all keys with search: prefix)
     // In production, use Redis SCAN or pattern-based invalidation
   }
@@ -1035,7 +1054,7 @@ export class CacheService implements CachePort {
 CREATE INDEX idx_content_search ON content USING GIN(search_vector);
 
 -- Partial index for published content only
-CREATE INDEX idx_content_published ON content (id) 
+CREATE INDEX idx_content_published ON content (id)
   WHERE status = 'published';
 
 -- Composite index for filtered queries
@@ -1180,12 +1199,12 @@ src/
 
 ### Key Design Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| `domain/entities/` are **pure classes** | No TypeORM decorators — domain stays framework-free |
-| `infrastructure/persistence/entities/` are **ORM entities** | Separate DB mapping from domain logic |
-| Ports define **interfaces** | Allows swapping implementations (test/prod) |
-| Each adapter has its own **module** | Clear boundaries, can be extracted to microservices |
+| Decision                                                    | Rationale                                           |
+| ----------------------------------------------------------- | --------------------------------------------------- |
+| `domain/entities/` are **pure classes**                     | No TypeORM decorators — domain stays framework-free |
+| `infrastructure/persistence/entities/` are **ORM entities** | Separate DB mapping from domain logic               |
+| Ports define **interfaces**                                 | Allows swapping implementations (test/prod)         |
+| Each adapter has its own **module**                         | Clear boundaries, can be extracted to microservices |
 
 ---
 
@@ -1193,14 +1212,14 @@ src/
 
 ### Simplifications Made (Interview Scope)
 
-| Original Design | Simplified To | Why |
-|-----------------|---------------|-----|
-| NATS JetStream | In-process EventEmitter | No external messaging infra needed for demo |
-| Elasticsearch | PostgreSQL Full-Text Search | One less service, sufficient for scope |
-| NATS KV | Redis | Standard, well-known cache solution |
-| Protobuf schemas | TypeScript classes | No code generation, simpler DX |
-| Job tracking system | Sync idempotent import | Simpler flow, no job state management |
-| Separate core/application | Merged `domain/` | Fewer folders, same principles |
+| Original Design           | Simplified To               | Why                                         |
+| ------------------------- | --------------------------- | ------------------------------------------- |
+| NATS JetStream            | In-process EventEmitter     | No external messaging infra needed for demo |
+| Elasticsearch             | PostgreSQL Full-Text Search | One less service, sufficient for scope      |
+| NATS KV                   | Redis                       | Standard, well-known cache solution         |
+| Protobuf schemas          | TypeScript classes          | No code generation, simpler DX              |
+| Job tracking system       | Sync idempotent import      | Simpler flow, no job state management       |
+| Separate core/application | Merged `domain/`            | Fewer folders, same principles              |
 
 ### Decisions Retained
 
@@ -1216,12 +1235,12 @@ src/
 
 If this were to go to production, we would consider:
 
-| Current | Production Upgrade | Trigger |
-|---------|-------------------|---------|
-| EventEmitter | NATS JetStream / Kafka | Need event persistence, replay, multi-instance |
-| PostgreSQL FTS | Elasticsearch | Need typo tolerance, faceted search, >1M docs |
-| Single Redis | Redis Cluster | Cache size > single node memory |
-| Mock YouTube | Real YouTube API | Actual content import needed |
+| Current        | Production Upgrade     | Trigger                                        |
+| -------------- | ---------------------- | ---------------------------------------------- |
+| EventEmitter   | NATS JetStream / Kafka | Need event persistence, replay, multi-instance |
+| PostgreSQL FTS | Elasticsearch          | Need typo tolerance, faceted search, >1M docs  |
+| Single Redis   | Redis Cluster          | Cache size > single node memory                |
+| Mock YouTube   | Real YouTube API       | Actual content import needed                   |
 
 ### Known Limitations
 
@@ -1237,11 +1256,11 @@ If this were to go to production, we would consider:
 
 ### Infrastructure (Development)
 
-| Component  | Purpose                              |
-| ---------- | ------------------------------------ |
-| PostgreSQL | Source of truth + full-text search   |
-| Redis      | Caching layer                        |
-| Node.js    | NestJS application                   |
+| Component  | Purpose                            |
+| ---------- | ---------------------------------- |
+| PostgreSQL | Source of truth + full-text search |
+| Redis      | Caching layer                      |
+| Node.js    | NestJS application                 |
 
 ### Docker Compose (Development)
 

@@ -32,8 +32,3 @@ services:
 volumes:
   postgres_data:
   redis_data:
-
-volumes:
-  postgres_data:
-  es_data:
-  nats_data:
