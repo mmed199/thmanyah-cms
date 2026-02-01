@@ -1,98 +1,295 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Thmanyah Content Platform (CMS + Discovery)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A **NestJS modular-monolith** implementing a two-component system (CMS + Discovery) as a response to **Thmanyah’s Senior Software Engineer Assignment (Backend)**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+- **CMS (REST)** for editors to manage programs and episodes (CRUD + publish/archive)
+- **Discovery (GraphQL)** for public browsing and full-text search (published-only) with **Redis caching**
+- **Ingestion (REST)** to demonstrate future import extensibility (strategy-based, mock YouTube)
 
-## Description
+## Quick links
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- Assignment brief: [`.github/software_engineer_assignment_english.md`](.github/software_engineer_assignment_english.md)
+- Design doc (architecture, trade-offs, diagrams): [`docs/design.md`](docs/design.md)
+- Postman collection: [`postman/collections/Thmanyah Content Platform API.postman_collection.json`](postman/collections/Thmanyah%20Content%20Platform%20API.postman_collection.json)
 
-## Project setup
+## Endpoints
 
-```bash
-$ npm install
+After running locally:
+
+- Base API prefix: `http://localhost:3000/api`
+- Swagger (OpenAPI): `http://localhost:3000/docs`
+- Discovery GraphQL: `http://localhost:3000/graphql`
+
+## Requirements → Implementation (assignment mapping)
+
+### 1) Content Management System (CMS)
+
+Editors can:
+
+- Create/update/list/delete **Programs** (podcast series / documentary series)
+- Create/update/list/delete **Contents** (episodes / videos)
+- Manage metadata: `title`, `description`, `category`, `language`, plus extensible `metadata` JSON
+- Control lifecycle:
+  - `POST /api/cms/contents/:id/publish`
+  - `POST /api/cms/contents/:id/archive`
+
+### 2) Discovery System
+
+Public users can:
+
+- Browse published programs and content via GraphQL
+- Search across programs/content (published-only) with filtering and sorting
+- Benefit from Redis caching on hot queries and item lookups
+
+### Future import extensibility
+
+To demonstrate import from multiple sources:
+
+- The **Ingestion module** exposes REST endpoints and uses a **strategy pattern** (`src/ingestion/strategies/*`)
+- A mock YouTube importer is provided as an example adapter
+
+## Architecture (high level)
+
+This project follows a **modular monolith** approach with **clean architecture principles**:
+
+- Modules are self-contained (own their ports/adapters)
+- Shared layer contains only cross-cutting types (entities/enums/events/ORM mappings)
+
+```mermaid
+flowchart TB
+    subgraph Clients[Clients]
+      Editors[Editors (Internal)]
+      Users[Public Users]
+    end
+
+    subgraph App[NestJS Modular Monolith]
+      CMS[CMS Module\nREST]
+      Discovery[Discovery Module\nGraphQL]
+      Ingestion[Ingestion Module\nREST]
+      Shared[Shared\nEntities/Enums/Events]
+    end
+
+    subgraph Infra[Infrastructure]
+      PG[(PostgreSQL)]
+      Redis[(Redis)]
+    end
+
+    Editors --> CMS
+    Users --> Discovery
+
+    CMS --> PG
+    Discovery --> PG
+    Discovery --> Redis
+    Ingestion --> PG
+
+    CMS --> Shared
+    Discovery --> Shared
+    Ingestion --> Shared
 ```
 
-## Compile and run the project
+For full design rationale (SOLID, module boundaries, caching strategy, Postgres full-text search, trade-offs), see [`docs/design.md`](docs/design.md).
+
+## Tech stack
+
+- **Runtime:** Node.js + TypeScript
+- **Framework:** NestJS
+- **Database:** PostgreSQL (TypeORM)
+- **Caching:** Redis
+- **APIs:** REST (CMS + Ingestion) + GraphQL (Discovery)
+- **Docs:** Swagger at `/docs`
+
+## Data model (brief)
+
+Core entities:
+
+- `Program` (series)
+- `Content` (episode/video), optionally linked to a program (`programId` nullable)
+
+Design notes:
+
+- Extensible metadata is stored as JSON (`metadata`)
+- Discovery search is implemented using PostgreSQL full-text search (see `docs/design.md`)
+
+## APIs
+
+### CMS (REST)
+
+Base: `http://localhost:3000/api/cms`
+
+**Programs**
+
+| Method | Endpoint                      | Notes                      |
+| ------ | ----------------------------- | -------------------------- |
+| POST   | `/programs`                   | Create program             |
+| GET    | `/programs`                   | List (pagination/filter)   |
+| GET    | `/programs/:id`               | Get by id                  |
+| GET    | `/programs/:id/with-contents` | Program + contents summary |
+| PUT    | `/programs/:id`               | Update                     |
+| DELETE | `/programs/:id`               | Delete                     |
+
+**Contents**
+
+| Method | Endpoint                | Notes                    |
+| ------ | ----------------------- | ------------------------ |
+| POST   | `/contents`             | Create content           |
+| GET    | `/contents`             | List (pagination/filter) |
+| GET    | `/contents/:id`         | Get by id                |
+| PUT    | `/contents/:id`         | Update (incl. status)    |
+| DELETE | `/contents/:id`         | Delete                   |
+| POST   | `/contents/:id/publish` | Publish                  |
+| POST   | `/contents/:id/archive` | Archive                  |
+
+Example (create program):
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+curl -X POST http://localhost:3000/api/cms/programs \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "Fnjan",
+    "description": "Conversations about culture and society",
+    "type": "podcast_series",
+    "category": "society",
+    "language": "ar",
+    "metadata": {"host": "عبدالرحمن أبومالح"}
+  }'
 ```
 
-## Run tests
+Example (create content):
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+curl -X POST http://localhost:3000/api/cms/contents \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "programId": "<program-uuid>",
+    "title": "Episode 1",
+    "description": "Intro",
+    "type": "podcast_episode",
+    "category": "society",
+    "language": "ar",
+    "source": "manual",
+    "metadata": {"duration": 3600}
+  }'
 ```
 
-## Deployment
+### Ingestion (REST)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Base: `http://localhost:3000/api/cms/ingestion`
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+| Method | Endpoint   | Notes                  |
+| ------ | ---------- | ---------------------- |
+| GET    | `/sources` | List available sources |
+| POST   | `/import`  | Trigger import         |
+
+Example (import mock YouTube):
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+curl -X POST http://localhost:3000/api/cms/ingestion/import \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "source": "youtube",
+    "channelId": "demo",
+    "programId": "<optional-program-uuid>",
+    "contentType": "podcast_episode",
+    "category": "entertainment",
+    "maxResults": 5
+  }'
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Discovery (GraphQL)
 
-## Resources
+Endpoint: `http://localhost:3000/graphql`
 
-Check out a few resources that may come in handy when working with NestJS:
+Schema file: [`src/discovery/schema.gql`](src/discovery/schema.gql)
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Example query (search):
 
-## Support
+```graphql
+query Search($input: SearchInput!) {
+  search(input: $input) {
+    total
+    items {
+      score
+      program {
+        id
+        title
+        type
+        category
+      }
+      content {
+        id
+        title
+        type
+        category
+        programId
+      }
+    }
+  }
+}
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Variables:
 
-## Stay in touch
+```json
+{
+  "input": {
+    "query": "فنجان",
+    "categories": ["SOCIETY"],
+    "limit": 10,
+    "offset": 0,
+    "sortBy": "RELEVANCE",
+    "sortOrder": "DESC"
+  }
+}
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Running locally
 
-## License
+### Prerequisites
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Node.js + npm
+- Docker (for Postgres + Redis)
+
+### Steps
+
+```bash
+cp .env.example .env
+npm install
+
+docker-compose up -d
+npm run start:dev
+```
+
+Notes:
+
+- The app uses a global `/api` prefix.
+- Swagger is available at `/docs`.
+- In `NODE_ENV=development`, TypeORM uses `synchronize: true` (auto-creates schema on startup).
+- `npm run migration:run` is currently not applicable because the repo does not include `src/migrations/`.
+
+## Seed / demo data
+
+A seeder runs automatically on application bootstrap and seeds only if the database is empty (`SeederService` implements `OnApplicationBootstrap`).
+
+## Testing
+
+```bash
+npm test
+npm run test:e2e
+```
+
+## Challenges / trade-offs / improvements
+
+- **Postgres FTS vs Elasticsearch:** kept infra minimal for the assignment; can be swapped for Elasticsearch/OpenSearch when relevance and scale require it.
+- **In-process events (EventEmitter) vs a broker:** simplest for a modular monolith; can evolve to NATS/Kafka for async workloads and cross-service communication.
+- **Cache invalidation:** event-driven invalidation + TTL is simple but eventually consistent; can evolve with versioned keys or write-through caching.
+- **Missing concerns (intentional for scope):** auth, rate-limits, audit logs, multi-tenant editorial permissions.
+
+## Known limitations
+
+- No user management/authentication
+- Mock importer (no real YouTube API integration)
+- No rate limiting on the public GraphQL API
+
+---
+
+If you’re reviewing this as an assignment submission, the detailed architecture, reasoning, and diagrams are in [`docs/design.md`](docs/design.md).
