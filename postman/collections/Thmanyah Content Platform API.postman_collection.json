@@ -1,0 +1,671 @@
+{
+  "info": {
+    "_postman_id": "afec418d-146e-4fbd-976a-5e3e2c038d07",
+    "name": "Thmanyah Content Platform API",
+    "description": "API for managing podcasts, documentaries, and other content on the Thmanyah Content Platform.\n\n## Base URL\n`http://localhost:3000/api`\n\n## API Modules\n- **CMS Programs**: CRUD operations for programs (podcast series, documentary series)\n- **CMS Contents**: CRUD operations for content items (episodes, videos)\n- **CMS Ingestion**: Import content from external sources (YouTube, RSS)\n- **Discovery (GraphQL)**: Public-facing queries for published content\n\n## Enums Reference\n\n### ProgramType\n- `podcast_series`\n- `documentary_series`\n\n### ContentType\n- `podcast_episode`\n- `documentary_episode`\n- `standalone_video`\n\n### Category\n- `technology`\n- `culture`\n- `business`\n- `society`\n- `entertainment`\n\n### Status\n- `draft`\n- `published`\n- `archived`\n\n### Source\n- `manual`\n- `youtube`\n- `rss`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "CMS - Programs",
+      "item": [
+        {
+          "name": "Create Program",
+          "id": "90c21ad8-b9c0-407c-a772-7bae14699575",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"سوالف بزنس\",\n  \"description\": \"بودكاست عن ريادة الأعمال والبزنس\",\n  \"type\": \"podcast_series\",\n  \"category\": \"business\",\n  \"language\": \"ar\",\n  \"metadata\": {\n    \"host\": \"مشهور الدبيان\",\n    \"coverImage\": \"https://example.com/cover.jpg\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cms/programs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "programs"
+              ]
+            },
+            "description": "Create a new program (podcast series or documentary series).\n\n**Required fields:**\n- `title`: Program title (1-255 characters)\n- `type`: `podcast_series` or `documentary_series`\n- `category`: `technology`, `culture`, `business`, `society`, or `entertainment`\n\n**Optional fields:**\n- `description`: Program description (max 2000 characters)\n- `language`: Language code (default: `ar`)\n- `metadata`: Additional metadata object"
+          },
+          "response": []
+        },
+        {
+          "name": "List Programs",
+          "id": "68eff767-fe1e-4e1f-a9dc-79e2c11412ae",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/programs?page=1&limit=20",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "programs"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "podcast_series",
+                  "description": "Filter by program type",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "business",
+                  "description": "Filter by category",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "published",
+                  "description": "Filter by status",
+                  "disabled": true
+                },
+                {
+                  "key": "language",
+                  "value": "ar",
+                  "description": "Filter by language code",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page (1-100, default: 20)"
+                }
+              ]
+            },
+            "description": "List programs with optional filters and pagination.\n\n**Query Parameters:**\n- `type`: Filter by program type\n- `category`: Filter by category\n- `status`: Filter by status (`draft`, `published`, `archived`)\n- `language`: Filter by language code\n- `page`: Page number (default: 1)\n- `limit`: Items per page (1-100, default: 20)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Program by ID",
+          "id": "ffdd7cd9-c6a5-4ec5-be50-393d9162d65a",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/programs/{{programId}}",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "programs",
+                "{{programId}}"
+              ]
+            },
+            "description": "Get a single program by its UUID.\n\n**Path Parameters:**\n- `id`: Program UUID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Program with Contents",
+          "id": "0878cf64-83d8-4337-93c4-e84f6f31c0e8",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/programs/{{programId}}/with-contents",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "programs",
+                "{{programId}}",
+                "with-contents"
+              ]
+            },
+            "description": "Get a program along with its associated content items.\n\n**Path Parameters:**\n- `id`: Program UUID\n\n**Response includes:**\n- Program details\n- Array of contents with basic info (id, title, type, status, publishedAt)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Program",
+          "id": "14fb8a8e-5d99-4599-8ff4-13ca975d5c2f",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"سوالف بزنس - الموسم الثاني\",\n  \"description\": \"Updated description\",\n  \"status\": \"published\"\n}"
+            },
+            "url": {
+              "raw": "{{cmsURL}}/cms/programs/{{programId}}",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "programs",
+                "{{programId}}"
+              ]
+            },
+            "description": "Update an existing program. All fields are optional.\n\n**Path Parameters:**\n- `id`: Program UUID\n\n**Updatable fields:**\n- `title`, `description`, `type`, `category`, `language`, `status`, `metadata`"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Program",
+          "id": "24455fcc-8580-4fc2-92ab-a358ace47b5c",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/programs/{{programId}}",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "programs",
+                "{{programId}}"
+              ]
+            },
+            "description": "Delete a program by its UUID.\n\n**Path Parameters:**\n- `id`: Program UUID\n\n**Response:** 204 No Content on success"
+          },
+          "response": []
+        }
+      ],
+      "id": "6d269f04-c79d-46e6-8b4e-ef8f905ae862",
+      "description": "REST API endpoints for managing programs (podcast series, documentary series)"
+    },
+    {
+      "name": "CMS - Contents",
+      "item": [
+        {
+          "name": "Create Content",
+          "id": "ce274552-1402-47c8-92ca-0d1592309e53",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"programId\": \"{{programId}}\",\n  \"title\": \"الحلقة 1: بداية الرحلة\",\n  \"description\": \"في هذه الحلقة نتحدث عن...\",\n  \"type\": \"podcast_episode\",\n  \"category\": \"business\",\n  \"language\": \"ar\",\n  \"source\": \"manual\",\n  \"metadata\": {\n    \"duration\": 3600,\n    \"thumbnailUrl\": \"https://example.com/thumb.jpg\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{cmsURL}}/cms/contents",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "contents"
+              ]
+            },
+            "description": "Create a new content item.\n\n**Required fields:**\n- `title`: Content title (1-500 characters)\n- `type`: `podcast_episode`, `documentary_episode`, or `standalone_video`\n- `category`: `technology`, `culture`, `business`, `society`, or `entertainment`\n\n**Optional fields:**\n- `programId`: Parent program UUID\n- `description`: Content description (max 5000 characters)\n- `language`: Language code (default: `ar`)\n- `source`: `manual`, `youtube`, or `rss` (default: `manual`)\n- `externalId`: External ID for imported content\n- `metadata`: Additional metadata (duration, thumbnailUrl, etc.)"
+          },
+          "response": []
+        },
+        {
+          "name": "List Contents",
+          "id": "e053db83-a108-4efe-bba3-38795143be52",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/contents?page=1&limit=10",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "contents"
+              ],
+              "query": [
+                {
+                  "key": "programId",
+                  "value": "{{programId}}",
+                  "description": "Filter by parent program ID",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "podcast_episode",
+                  "description": "Filter by content type",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "business",
+                  "description": "Filter by category",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "published",
+                  "description": "Filter by status",
+                  "disabled": true
+                },
+                {
+                  "key": "source",
+                  "value": "youtube",
+                  "description": "Filter by source",
+                  "disabled": true
+                },
+                {
+                  "key": "language",
+                  "value": "ar",
+                  "description": "Filter by language code",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)",
+                  "uuid": "c4a18437-3455-44e5-a20d-efcd47f7447b"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "List content items with optional filters and pagination.\n\n**Query Parameters:**\n- `programId`: Filter by parent program\n- `type`: Filter by content type\n- `category`: Filter by category\n- `status`: Filter by status\n- `source`: Filter by source\n- `language`: Filter by language code\n- `page`: Page number (default: 1)\n- `limit`: Items per page (1-100, default: 20)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Content by ID",
+          "id": "0e5ff3c5-8eb0-4479-bda9-88ccda2e65f6",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/contents/{{contentId}}",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Get a single content item by its UUID.\n\n**Path Parameters:**\n- `id`: Content UUID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Content",
+          "id": "fca0bfdd-4ac5-40cf-8349-4c90ab05e4ca",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"الحلقة 1: بداية الرحلة (محدث)\",\n  \"description\": \"Updated description\",\n  \"status\": \"published\"\n}"
+            },
+            "url": {
+              "raw": "{{cmsURL}}/cms/contents/{{contentId}}",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Update an existing content item. All fields are optional.\n\n**Path Parameters:**\n- `id`: Content UUID\n\n**Updatable fields:**\n- `programId`, `title`, `description`, `type`, `category`, `language`, `status`, `metadata`"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Content",
+          "id": "7f20f496-3f0e-46af-98da-3553996cf948",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/contents/{{contentId}}",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Delete a content item by its UUID.\n\n**Path Parameters:**\n- `id`: Content UUID\n\n**Response:** 204 No Content on success"
+          },
+          "response": []
+        },
+        {
+          "name": "Publish Content",
+          "id": "b1427735-0e9c-4c31-956a-f951e38c4ab3",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/contents/{{contentId}}/publish",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "publish"
+              ]
+            },
+            "description": "Publish a content item (change status from `draft` to `published`).\n\n**Path Parameters:**\n- `id`: Content UUID\n\n**Note:** Only valid for content in `draft` status."
+          },
+          "response": []
+        },
+        {
+          "name": "Archive Content",
+          "id": "7f4d9f6e-11d6-4815-b9e0-f8b39277de20",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/contents/{{contentId}}/archive",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "archive"
+              ]
+            },
+            "description": "Archive a content item (change status to `archived`).\n\n**Path Parameters:**\n- `id`: Content UUID\n\n**Note:** Only valid for content in `published` status."
+          },
+          "response": []
+        }
+      ],
+      "id": "796736ad-e682-4b55-bede-0ac50eb14e3f",
+      "description": "REST API endpoints for managing content items (episodes, videos)"
+    },
+    {
+      "name": "CMS - Ingestion",
+      "item": [
+        {
+          "name": "Get Available Sources",
+          "id": "a00b19c6-8e98-4c9f-adef-ac6d1552bfa3",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/ingestion/sources",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "ingestion",
+                "sources"
+              ]
+            },
+            "description": "Get a list of available ingestion sources.\n\n**Response:**\n```json\n{\n  \"sources\": [\"manual\", \"youtube\", \"rss\"]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Import Content",
+          "id": "3befaa40-5f18-4379-b506-7c4c348a794d",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"youtube\",\n  \"channelId\": \"UC_demo_channel_1\",\n  \"programId\": \"{{programId}}\",\n  \"contentType\": \"podcast_episode\",\n  \"category\": \"entertainment\",\n  \"maxResults\": 50\n}"
+            },
+            "url": {
+              "raw": "{{cmsURL}}/cms/ingestion/import",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "ingestion",
+                "import"
+              ]
+            },
+            "description": "Import content from an external source.\n\n**Required fields:**\n- `source`: `youtube` or `rss`\n- `channelId`: External channel/playlist ID\n\n**Optional fields:**\n- `programId`: Target program UUID (auto-created if not provided)\n- `contentType`: Content type for imported items (default: `podcast_episode`)\n- `category`: Category for imported items (default: `entertainment`)\n- `maxResults`: Maximum items to import (1-100, default: 50)\n\n**Response:**\n```json\n{\n  \"source\": \"youtube\",\n  \"channelId\": \"UC_demo_channel_1\",\n  \"programId\": \"uuid\",\n  \"imported\": 10,\n  \"skipped\": 2,\n  \"errors\": []\n}\n```"
+          },
+          "response": []
+        }
+      ],
+      "id": "81f456d6-30ca-40aa-a84d-348dee534581",
+      "description": "REST API endpoints for importing content from external sources"
+    },
+    {
+      "name": "Discovery - GraphQL",
+      "item": [
+        {
+          "name": "Get Program by ID",
+          "id": "6fb749fb-e6b8-41f0-9945-9a80be303046",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetProgram($id: ID!) { program(id: $id) { id title description type category language status createdAt updatedAt } }\",\n  \"variables\": {\n    \"id\": \"{{programId}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{graphURL}}/graphql",
+              "host": [
+                "{{graphURL}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Get a published program by ID.\n\n**Arguments:**\n- `id` (ID!): Program UUID\n\n**Returns:** Program object or null if not found/not published"
+          },
+          "response": []
+        },
+        {
+          "name": "List Programs",
+          "id": "ad8ee0eb-e146-4ca9-b317-fc8dcb7e0d5b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetPrograms($category: Category, $type: ProgramType, $language: String, $limit: Int, $offset: Int) { programs(category: $category, type: $type, language: $language, limit: $limit, offset: $offset) { items { id title description type category language status createdAt updatedAt } total limit offset } }\",\n  \"variables\": {\n    \"category\": null,\n    \"type\": null,\n    \"language\": null,\n    \"limit\": 20,\n    \"offset\": 0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{graphURL}}/graphql",
+              "host": [
+                "{{graphURL}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "List published programs with optional filters.\n\n**Arguments:**\n- `category` (Category): Filter by category\n- `type` (ProgramType): Filter by program type\n- `language` (String): Filter by language code\n- `limit` (Int): Items per page (default: 20)\n- `offset` (Int): Offset for pagination (default: 0)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Program with Contents",
+          "id": "5b45a115-774b-42eb-8c43-a2c3d761e65d",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetProgramWithContents($id: ID!, $limit: Int, $offset: Int) { program(id: $id) { id title description type category language status createdAt updatedAt contentCount contents(limit: $limit, offset: $offset) { id title description type category language status source publishedAt duration thumbnailUrl } } }\",\n  \"variables\": {\n    \"id\": \"{{programId}}\",\n    \"limit\": 20,\n    \"offset\": 0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{graphURL}}/graphql",
+              "host": [
+                "{{graphURL}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Get a program with its published contents.\n\n**Arguments:**\n- `id` (ID!): Program UUID\n- `limit` (Int): Contents per page (default: 20)\n- `offset` (Int): Offset for pagination (default: 0)\n\n**Returns:** Program with nested contents array and contentCount"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Content by ID",
+          "id": "4fe985fe-06aa-4584-bd39-177f67cbc81f",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetContent($id: ID!) { content(id: $id) { id programId title description type category language status source externalId publishedAt createdAt updatedAt duration thumbnailUrl } }\",\n  \"variables\": {\n    \"id\": \"{{contentId}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{graphURL}}/graphql",
+              "host": [
+                "{{graphURL}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Get a published content item by ID.\n\n**Arguments:**\n- `id` (ID!): Content UUID\n\n**Returns:** Content object or null if not found/not published"
+          },
+          "response": []
+        },
+        {
+          "name": "List Contents",
+          "id": "87284801-6019-47ff-b318-ec31972b01d7",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetContents($programId: ID, $category: Category, $type: ContentType, $language: String, $limit: Int, $offset: Int) { contents(programId: $programId, category: $category, type: $type, language: $language, limit: $limit, offset: $offset) { items { id programId title description type category language status source publishedAt duration thumbnailUrl } total limit offset } }\",\n  \"variables\": {\n    \"programId\": null,\n    \"category\": null,\n    \"type\": null,\n    \"language\": null,\n    \"limit\": 20,\n    \"offset\": 0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{graphURL}}/graphql",
+              "host": [
+                "{{graphURL}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "List published content items with optional filters.\n\n**Arguments:**\n- `programId` (ID): Filter by parent program\n- `category` (Category): Filter by category\n- `type` (ContentType): Filter by content type\n- `language` (String): Filter by language code\n- `limit` (Int): Items per page (default: 20)\n- `offset` (Int): Offset for pagination (default: 0)"
+          },
+          "response": []
+        },
+        {
+          "name": "Search",
+          "id": "8a4dcff8-c4a4-4c47-9e7f-bfd06f233a8c",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Search($input: SearchInput!) { search(input: $input) { items { score program { id title description type category } content { id title description type category programId publishedAt duration thumbnailUrl } } total limit offset query } }\",\n  \"variables\": {\n    \"input\": {\n      \"query\": \"بزنس\",\n      \"categories\": null,\n      \"contentTypes\": null,\n      \"programTypes\": null,\n      \"language\": null,\n      \"sortBy\": \"RELEVANCE\",\n      \"sortOrder\": \"DESC\",\n      \"limit\": 20,\n      \"offset\": 0\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{graphURL}}/graphql",
+              "host": [
+                "{{graphURL}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Unified search across programs and contents.\n\n**SearchInput fields:**\n- `query` (String): Search query text\n- `categories` ([Category]): Filter by categories\n- `contentTypes` ([ContentType]): Filter by content types\n- `programTypes` ([ProgramType]): Filter by program types\n- `language` (String): Filter by language code\n- `sortBy` (SortField): `relevance`, `created_at`, `published_at`, `title`\n- `sortOrder` (SortOrder): `ASC` or `DESC`\n- `limit` (Int): Items per page (1-100, default: 20)\n- `offset` (Int): Offset for pagination (default: 0)\n\n**Returns:** Search results with score, matching programs and/or contents"
+          },
+          "response": []
+        }
+      ],
+      "id": "433407a5-b767-4e96-8edd-60a5e89c5c6a",
+      "description": "GraphQL API for public-facing queries (only published content)"
+    }
+  ],
+  "variable": [
+    {
+      "id": "6d5c4086-6639-4e6a-b490-0a91f679109c",
+      "key": "cmsURL",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "id": "f7178759-79bd-4ac4-81ec-8e7d24ec5259",
+      "key": "programId",
+      "value": ""
+    },
+    {
+      "id": "1efd2638-f434-4f01-832f-e0aae6112117",
+      "key": "contentId",
+      "value": ""
+    },
+    {
+      "id": "99675e13-c485-4246-a69a-c4a7167fec21",
+      "key": "graphURL",
+      "value": ""
+    }
+  ]
+}

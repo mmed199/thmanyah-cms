@@ -1,0 +1,15 @@
+{
+  "workspace": {
+    "id": "d519b915-1b58-4992-a5a1-88dfff05756f"
+  },
+  "entities": {
+    "environments": [],
+    "flows": [],
+    "globals": [],
+    "mocks": [],
+    "specs": [
+      "../src/discovery/schema.gql"
+    ],
+    "collections": []
+  }
+}
