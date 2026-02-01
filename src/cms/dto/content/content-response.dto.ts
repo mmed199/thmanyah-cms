@@ -1,9 +1,5 @@
-/**
- * Content Response DTO
- */
-
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ContentType, Category, Status, Source } from "../../../shared/enums";
+import { ContentType, Category, Status, Source } from "@shared/enums";
 
 /**
  * Pure interface for service layer

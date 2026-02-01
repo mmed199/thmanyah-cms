@@ -3,7 +3,7 @@
  */
 
 import { ApiProperty } from "@nestjs/swagger";
-import { Source } from "../../../shared/enums";
+import { Source } from "@shared/enums";
 
 /**
  * Pure interface for service layer

@@ -11,7 +11,8 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 
 // Shared persistence entities
-import { ContentOrmEntity, ProgramOrmEntity } from "../shared/persistence";
+import { ContentOrmEntity } from "@shared/persistence/entities/content.orm-entity";
+import { ProgramOrmEntity } from "@shared/persistence/entities/program.orm-entity";
 
 // Controllers
 import { IngestionController } from "./controllers/ingestion.controller";
@@ -24,12 +25,12 @@ import { MockYouTubeStrategy } from "./strategies/mock-youtube.strategy";
 import { INGESTION_STRATEGIES } from "./interfaces/ingestion.interface";
 
 // Repositories (interfaces and implementations)
-import { INGESTION_CONTENT_WRITER } from "./repositories/content-writer.interface";
-import { INGESTION_PROGRAM_REPOSITORY } from "./repositories/program-repository.interface";
-import { INGESTION_EVENT_PUBLISHER } from "./repositories/event-publisher.interface";
-import { ContentWriter } from "./repositories/content-writer";
-import { ProgramRepository } from "./repositories/program-repository";
-import { EventPublisher } from "./repositories/event-publisher";
+import { INGESTION_CONTENT_WRITER } from "./adapters/persistence/content-writer.interface";
+import { INGESTION_PROGRAM_REPOSITORY } from "./adapters/persistence/program-repository.interface";
+import { INGESTION_EVENT_PUBLISHER } from "./adapters/messaging/event-publisher.interface";
+import { ContentWriter } from "./adapters/persistence/content-writer";
+import { ProgramRepository } from "./adapters/persistence/program-repository";
+import { EventPublisher } from "./adapters/messaging/event-publisher";
 
 @Module({
   imports: [

@@ -9,14 +9,17 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { appConfig, databaseConfig, redisConfig } from "./config";
-import { CmsModule } from "./cms";
-import { IngestionModule } from "./ingestion";
-import { DiscoveryModule } from "./discovery";
-import { SeederModule } from "./shared/seeder";
+import appConfig from "./config/app.config.js";
+import databaseConfig from "./config/database.config.js";
+import redisConfig from "./config/redis.config.js";
+import { CmsModule } from "./cms/cms.module";
+import { IngestionModule } from "./ingestion/ingestion.module";
+import { DiscoveryModule } from "./discovery/discovery.module";
+import { SeederModule } from "./shared/seeder/seeder.module";
 
 // Shared persistence entities for TypeORM auto-loading
-import { ContentOrmEntity, ProgramOrmEntity } from "./shared/persistence";
+import { ContentOrmEntity } from "./shared/persistence/entities/content.orm-entity";
+import { ProgramOrmEntity } from "./shared/persistence/entities/program.orm-entity";
 
 @Module({
   imports: [

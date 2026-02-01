@@ -1,10 +1,6 @@
-/**
- * Update Content DTO
- */
-
 import { ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { IsOptional, IsEnum } from "class-validator";
-import { Status } from "../../../shared/enums";
+import { Status } from "@shared/enums";
 import { CreateContentDto, CreateContentInput } from "./create-content.dto";
 
 /**

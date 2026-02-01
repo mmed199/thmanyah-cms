@@ -1,18 +1,16 @@
-/**
- * Search Service
- *
- * PostgreSQL full-text search implementation.
- * Uses tsvector/GIN indexes for fast text search.
- */
-
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, SelectQueryBuilder, ObjectLiteral } from "typeorm";
-import { ContentOrmEntity, ProgramOrmEntity } from "../../shared/persistence";
-import { ContentMapper, ProgramMapper } from "../../shared/persistence";
-import { Content } from "../../shared/entities/content.entity";
-import { Program } from "../../shared/entities/program.entity";
-import { Status, Category, ContentType, ProgramType } from "../../shared/enums";
+import { ContentOrmEntity } from "@shared/persistence/entities/content.orm-entity";
+import { ProgramOrmEntity } from "@shared/persistence/entities/program.orm-entity";
+import { ContentMapper } from "@shared/persistence/mappers/content.mapper";
+import { ProgramMapper } from "@shared/persistence/mappers/program.mapper";
+import { Content } from "@shared/entities/content.entity";
+import { Program } from "@shared/entities/program.entity";
+import { Status } from "@shared/enums/status.enum";
+import { Category } from "@shared/enums/category.enum";
+import { ContentType } from "@shared/enums/content-type.enum";
+import { ProgramType } from "@shared/enums/program-type.enum";
 import { SortField, SortOrder } from "../types/search/search.type";
 
 export interface SearchQuery {
@@ -38,6 +36,11 @@ export interface SearchResults {
   total: number;
 }
 
+/**
+ * Search Service
+ *
+ * PostgreSQL full-text search implementation.
+ */
 @Injectable()
 export class SearchService {
   constructor(

@@ -1,10 +1,6 @@
-/**
- * Update Program DTO
- */
-
 import { ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { IsOptional, IsEnum } from "class-validator";
-import { Status } from "../../../shared/enums";
+import { Status } from "@shared/enums";
 import { CreateProgramDto, CreateProgramInput } from "./create-program.dto";
 
 /**

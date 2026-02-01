@@ -1,2 +1,2 @@
-export type { ContentMetadata } from "./content-metadata.interface";
-export type { ProgramMetadata } from "./program-metadata.interface";
+export * from "./content-metadata.interface";
+export * from "./program-metadata.interface";

@@ -1,1 +1,1 @@
-export { IngestionModule } from "./ingestion.module";
+export * from "./ingestion.module";

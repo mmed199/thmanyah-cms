@@ -1,10 +1,6 @@
-/**
- * Search Types
- */
-
 import { ObjectType, Field, InputType, Int, registerEnumType } from "@nestjs/graphql";
 import { IsOptional, IsString, IsEnum, IsInt, Min, Max, IsArray } from "class-validator";
-import { ContentType, Category, ProgramType } from "../../../shared/enums";
+import { ContentType, Category, ProgramType } from "@shared/enums";
 import { ContentGraphQLType } from "../content/content.type";
 import { ProgramGraphQLType } from "../program/program.type";
 

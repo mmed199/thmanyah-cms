@@ -1,3 +1,3 @@
-export { ProgramCreatedEvent } from "./program-created.event";
-export { ProgramUpdatedEvent } from "./program-updated.event";
-export { ProgramDeletedEvent } from "./program-deleted.event";
+export * from "./program-created.event";
+export * from "./program-deleted.event";
+export * from "./program-updated.event";

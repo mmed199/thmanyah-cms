@@ -570,7 +570,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query GetContent($id: ID!) { content(id: $id) { id programId title description type category language status source externalId publishedAt createdAt updatedAt duration thumbnailUrl } }\",\n  \"variables\": {\n    \"id\": \"{{contentId}}\"\n  }\n}"
+              "raw": "{\n  \"query\": \"query GetContent($id: ID!) { content(id: $id) { id programId title description type category language status source externalId publishedAt duration thumbnailUrl } }\",\n  \"variables\": {\n    \"id\": \"{{contentId}}\"\n  }\n}"
             },
             "url": {
               "raw": "{{graphURL}}/graphql",
@@ -644,6 +644,26 @@
       ],
       "id": "433407a5-b767-4e96-8edd-60a5e89c5c6a",
       "description": "GraphQL API for public-facing queries (only published content)"
+    },
+    {
+      "name": "Swagger",
+      "id": "8535a3cd-c105-4578-882b-2ca527ded7a3",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/docs",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "docs"
+          ]
+        }
+      },
+      "response": []
     }
   ],
   "variable": [

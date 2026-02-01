@@ -204,11 +204,11 @@ flowchart TB
 
 **What Each Module Owns:**
 
-| Module        | Repository Interfaces                                       | Purpose                  |
-| ------------- | ----------------------------------------------------------- | ------------------------ |
-| **CMS**       | `ICmsContentRepository`, `ICmsProgramRepository`            | Full CRUD operations     |
-| **Discovery** | `IDiscoveryContentReader`, `IDiscoveryProgramReader`, `IDiscoveryCache` | Read-only + caching      |
-| **Ingestion** | `IIngestionContentWriter`, `IIngestionProgramRepository`, `IIngestionEventPublisher`              | Write + event publishing |
+| Module        | Repository Interfaces                                                                | Purpose                  |
+| ------------- | ------------------------------------------------------------------------------------ | ------------------------ |
+| **CMS**       | `ICmsContentRepository`, `ICmsProgramRepository`                                     | Full CRUD operations     |
+| **Discovery** | `IDiscoveryContentReader`, `IDiscoveryProgramReader`, `IDiscoveryCache`              | Read-only + caching      |
+| **Ingestion** | `IIngestionContentWriter`, `IIngestionProgramRepository`, `IIngestionEventPublisher` | Write + event publishing |
 
 ---
 
@@ -1290,13 +1290,13 @@ src/
 
 ### Key Design Decisions
 
-| Decision                                            | Rationale                                               |
-| --------------------------------------------------- | ------------------------------------------------------- |
-| `shared/entities/` are **pure classes**             | No TypeORM decorators — domain stays framework-free     |
-| `shared/persistence/entities/` are **ORM entities** | Separate DB mapping from domain logic                   |
-| Each module owns its **repositories/**              | Single folder with `*.interface.ts` + `*.ts` pairs      |
-| Interfaces colocated with implementations           | Easy to find, navigate, and understand relationships    |
-| `shared/` has **no business logic**                 | Only types, entities, enums, events                     |
+| Decision                                            | Rationale                                            |
+| --------------------------------------------------- | ---------------------------------------------------- |
+| `shared/entities/` are **pure classes**             | No TypeORM decorators — domain stays framework-free  |
+| `shared/persistence/entities/` are **ORM entities** | Separate DB mapping from domain logic                |
+| Each module owns its **repositories/**              | Single folder with `*.interface.ts` + `*.ts` pairs   |
+| Interfaces colocated with implementations           | Easy to find, navigate, and understand relationships |
+| `shared/` has **no business logic**                 | Only types, entities, enums, events                  |
 
 ### Module Independence
 
@@ -1331,13 +1331,13 @@ Each module is **self-contained** and can be extracted to a microservice:
 
 ### Architecture Decisions
 
-| Decision                          | Alternative Considered    | Why We Chose This                                                 |
-| --------------------------------- | ------------------------- | ----------------------------------------------------------------- |
-| **Single `repositories/` folder** | Separate `ports/` + `adapters/` | Simpler structure — interfaces and implementations colocated      |
-| **`*.interface.ts` + `*.ts` naming** | `.port.ts` + `.adapter.ts` | Cleaner naming, still clear distinction                          |
-| **Modular Monolith**              | Microservices             | Simpler for assignment scope, clear boundaries, can extract later |
-| **Some code duplication**         | Shared repository adapter | Independence > DRY — each module can evolve separately            |
-| **shared/ has no business logic** | Domain services in shared | Keeps modules self-contained, shared is just types                |
+| Decision                             | Alternative Considered          | Why We Chose This                                                 |
+| ------------------------------------ | ------------------------------- | ----------------------------------------------------------------- |
+| **Single `repositories/` folder**    | Separate `ports/` + `adapters/` | Simpler structure — interfaces and implementations colocated      |
+| **`*.interface.ts` + `*.ts` naming** | `.port.ts` + `.adapter.ts`      | Cleaner naming, still clear distinction                           |
+| **Modular Monolith**                 | Microservices                   | Simpler for assignment scope, clear boundaries, can extract later |
+| **Some code duplication**            | Shared repository adapter       | Independence > DRY — each module can evolve separately            |
+| **shared/ has no business logic**    | Domain services in shared       | Keeps modules self-contained, shared is just types                |
 
 ### Module-Owned Ports Trade-offs
 

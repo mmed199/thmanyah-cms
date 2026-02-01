@@ -7,17 +7,17 @@
 
 import { Injectable, Inject, NotFoundException, BadRequestException } from "@nestjs/common";
 import { v4 as uuid } from "uuid";
-import { Content } from "../../shared/entities/content.entity";
-import { Program } from "../../shared/entities/program.entity";
-import { Source, ContentType, Category, ProgramType } from "../../shared/enums";
-import { ContentCreatedEvent } from "../../shared/events/content";
-import { ProgramCreatedEvent } from "../../shared/events/program";
-import type { IIngestionContentWriter } from "../repositories/content-writer.interface";
-import { INGESTION_CONTENT_WRITER } from "../repositories/content-writer.interface";
-import type { IIngestionProgramRepository } from "../repositories/program-repository.interface";
-import { INGESTION_PROGRAM_REPOSITORY } from "../repositories/program-repository.interface";
-import type { IIngestionEventPublisher } from "../repositories/event-publisher.interface";
-import { INGESTION_EVENT_PUBLISHER } from "../repositories/event-publisher.interface";
+import { Content } from "@shared/entities/content.entity";
+import { Program } from "@shared/entities/program.entity";
+import { Source, ContentType, Category, ProgramType } from "@shared/enums";
+import { ContentCreatedEvent } from "@shared/events/content";
+import { ProgramCreatedEvent } from "@shared/events/program";
+import type { IIngestionContentWriter } from "../adapters/persistence/content-writer.interface";
+import { INGESTION_CONTENT_WRITER } from "../adapters/persistence/content-writer.interface";
+import type { IIngestionProgramRepository } from "../adapters/persistence/program-repository.interface";
+import { INGESTION_PROGRAM_REPOSITORY } from "../adapters/persistence/program-repository.interface";
+import type { IIngestionEventPublisher } from "../adapters/messaging/event-publisher.interface";
+import { INGESTION_EVENT_PUBLISHER } from "../adapters/messaging/event-publisher.interface";
 import {
   IIngestionStrategy,
   INGESTION_STRATEGIES,

@@ -1,31 +1,30 @@
-/**
- * CMS Content Service
- *
- * Orchestrates content management use cases for CMS module.
- * Uses CMS-owned ports for persistence and event publishing.
- */
-
 import { Injectable, Inject, NotFoundException, BadRequestException } from "@nestjs/common";
 import { v4 as uuid } from "uuid";
-import { Content } from "../../shared/entities/content.entity";
-import { Status } from "../../shared/enums";
-import {
-  ContentCreatedEvent,
-  ContentUpdatedEvent,
-  ContentPublishedEvent,
-  ContentArchivedEvent,
-  ContentDeletedEvent,
-} from "../../shared/events/content";
-import type { PaginationOptions, PaginatedResult } from "../../shared/types";
-import type { IContentRepository, ContentFilter } from "../repositories/content.repository.interface";
-import { CMS_CONTENT_REPOSITORY } from "../repositories/content.repository.interface";
-import type { ICmsProgramRepository } from "../repositories/program.repository.interface";
-import { CMS_PROGRAM_REPOSITORY } from "../repositories/program.repository.interface";
-import type { ICmsEventPublisher } from "../repositories/event-publisher.interface";
-import { CMS_EVENT_PUBLISHER } from "../repositories/event-publisher.interface";
+import { Content } from "@shared/entities/content.entity";
+import { Status } from "@shared/enums/status.enum";
+import { ContentCreatedEvent } from "@shared/events/content/content-created.event";
+import { ContentUpdatedEvent } from "@shared/events/content/content-updated.event";
+import { ContentPublishedEvent } from "@shared/events/content/content-published.event";
+import { ContentArchivedEvent } from "@shared/events/content/content-archived.event";
+import { ContentDeletedEvent } from "@shared/events/content/content-deleted.event";
+import type { PaginationOptions, PaginatedResult } from "@shared/types/pagination.types";
+import type {
+  IContentRepository,
+  ContentFilter,
+} from "../adapters/persistence/content.repository.interface";
+import { CMS_CONTENT_REPOSITORY } from "../adapters/persistence/content.repository.interface";
+import type { ICmsProgramRepository } from "../adapters/persistence/program.repository.interface";
+import { CMS_PROGRAM_REPOSITORY } from "../adapters/persistence/program.repository.interface";
+import type { ICmsEventPublisher } from "../adapters/messaging/event-publisher.interface";
+import { CMS_EVENT_PUBLISHER } from "../adapters/messaging/event-publisher.interface";
 import type { CreateContentInput } from "../dto/content/create-content.dto";
 import type { UpdateContentInput } from "../dto/content/update-content.dto";
 
+/**
+ * CMS Content Service
+ * 
+ * Business logic for managing content
+ */
 @Injectable()
 export class CmsContentService {
   constructor(
@@ -75,22 +74,6 @@ export class CmsContentService {
     return saved;
   }
 
-  async findById(id: string): Promise<Content> {
-    const content = await this.contentRepository.findById(id);
-    if (!content) {
-      throw new NotFoundException(`Content with ID ${id} not found`);
-    }
-    return content;
-  }
-
-  async findByIdWithProgram(id: string): Promise<Content> {
-    const content = await this.contentRepository.findByIdWithProgram(id);
-    if (!content) {
-      throw new NotFoundException(`Content with ID ${id} not found`);
-    }
-    return content;
-  }
-
   async update(id: string, input: UpdateContentInput): Promise<Content> {
     const content = await this.contentRepository.findById(id);
     if (!content) {
@@ -127,7 +110,7 @@ export class CmsContentService {
     const saved = await this.contentRepository.save(content);
 
     // Emit appropriate events
-    await this.emitContentEvents(saved, previousStatus, input);
+    await this.emitContentUpdatedEvents(saved, previousStatus, input);
 
     return saved;
   }
@@ -144,6 +127,22 @@ export class CmsContentService {
     }
 
     await this.eventPublisher.publish(new ContentDeletedEvent(id, content.programId));
+  }
+
+  async findById(id: string): Promise<Content> {
+    const content = await this.contentRepository.findById(id);
+    if (!content) {
+      throw new NotFoundException(`Content with ID ${id} not found`);
+    }
+    return content;
+  }
+
+  async findByIdWithProgram(id: string): Promise<Content> {
+    const content = await this.contentRepository.findByIdWithProgram(id);
+    if (!content) {
+      throw new NotFoundException(`Content with ID ${id} not found`);
+    }
+    return content;
   }
 
   async findAll(
@@ -168,7 +167,7 @@ export class CmsContentService {
     return this.update(id, { status: Status.ARCHIVED });
   }
 
-  private async emitContentEvents(
+  private async emitContentUpdatedEvents(
     content: Content,
     previousStatus: Status,
     input: UpdateContentInput,

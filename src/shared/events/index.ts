@@ -1,9 +1,3 @@
-export { DomainEvent } from "./domain-event";
-export {
-  ContentCreatedEvent,
-  ContentUpdatedEvent,
-  ContentPublishedEvent,
-  ContentArchivedEvent,
-  ContentDeletedEvent,
-} from "./content";
-export { ProgramCreatedEvent, ProgramUpdatedEvent, ProgramDeletedEvent } from "./program";
+export * from "./domain-event";
+export * from "./content/index";
+export * from "./program/index";

@@ -1,1 +1,1 @@
-export type { PaginationOptions, PaginatedResult } from "./pagination.types";
+export * from "./pagination.types";

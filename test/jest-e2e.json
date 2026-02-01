@@ -8,6 +8,7 @@
   },
   "transformIgnorePatterns": ["node_modules/(?!(uuid)/)"],
   "moduleNameMapper": {
+    "^@shared/(.*)$": "<rootDir>/../src/shared/$1",
     "^src/(.*)$": "<rootDir>/../src/$1"
   },
   "setupFilesAfterEnv": ["<rootDir>/setup.ts"],

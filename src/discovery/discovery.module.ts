@@ -8,7 +8,8 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { join } from "path";
 
 // Shared persistence entities
-import { ContentOrmEntity, ProgramOrmEntity } from "../shared/persistence";
+import { ContentOrmEntity } from "@shared/persistence/entities/content.orm-entity";
+import { ProgramOrmEntity } from "@shared/persistence/entities/program.orm-entity";
 
 // Resolvers
 import { ProgramsResolver } from "./resolvers/programs.resolver";
@@ -20,12 +21,12 @@ import { SearchService } from "./services/search.service";
 import { CacheService } from "./services/cache.service";
 
 // Repositories (interfaces and implementations)
-import { DISCOVERY_CONTENT_READER } from "./repositories/content-reader.interface";
-import { DISCOVERY_PROGRAM_READER } from "./repositories/program-reader.interface";
-import { DISCOVERY_CACHE } from "./repositories/cache.interface";
-import { ContentReader } from "./repositories/content-reader";
-import { ProgramReader } from "./repositories/program-reader";
-import { CacheRepository } from "./repositories/cache";
+import { DISCOVERY_CONTENT_READER } from "./adapters/persistence/content-reader.interface";
+import { DISCOVERY_PROGRAM_READER } from "./adapters/persistence/program-reader.interface";
+import { DISCOVERY_CACHE } from "./adapters/cache/cache.interface";
+import { ContentReader } from "./adapters/persistence/content-reader";
+import { ProgramReader } from "./adapters/persistence/program-reader";
+import { CacheRepository } from "./adapters/cache/cache";
 
 /**
  * Discovery Module

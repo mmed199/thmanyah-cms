@@ -1,14 +1,13 @@
-/**
- * Search Resolver
- *
- * GraphQL resolver for unified search queries.
- */
-
 import { Resolver, Query, Args } from "@nestjs/graphql";
 import { SearchInput, SearchResult, SearchResultItem } from "../types/search/search.type";
 import { SearchService } from "../services/search.service";
 import { CacheService } from "../services/cache.service";
 
+/**
+ * Search Resolver
+ *
+ * GraphQL resolver for unified search queries.
+ */
 @Resolver()
 export class SearchResolver {
   constructor(

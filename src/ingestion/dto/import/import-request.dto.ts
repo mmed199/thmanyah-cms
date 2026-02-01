@@ -4,7 +4,7 @@
 
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsString, IsEnum, IsOptional, IsUUID, IsNumber, Min, Max } from "class-validator";
-import { Source, ContentType, Category } from "../../../shared/enums";
+import { Source, ContentType, Category } from "@shared/enums";
 
 /**
  * Pure interface for service layer

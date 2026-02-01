@@ -1,7 +1,3 @@
-/**
- * Create Content DTO
- */
-
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import {
   IsString,
@@ -12,7 +8,7 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
-import { ContentType, Category, Source } from "../../../shared/enums";
+import { ContentType, Category, Source } from "@shared/enums";
 
 /**
  * Pure interface for service layer

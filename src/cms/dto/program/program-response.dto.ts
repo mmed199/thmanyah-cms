@@ -1,9 +1,8 @@
-/**
- * Program Response DTO
- */
-
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ProgramType, Category, Status } from "../../../shared/enums";
+import { ProgramType } from "@shared/enums/program-type.enum";
+import { Category } from "@shared/enums/category.enum";
+import { Status } from "@shared/enums/status.enum";
+import { ContentType } from "@shared/enums/content-type.enum";
 
 /**
  * Pure interface for service layer
@@ -54,6 +53,28 @@ export class ProgramResponseDto implements ProgramResponse {
 
   @ApiProperty({ description: "Last update timestamp" })
   updatedAt: Date;
+}
+
+export class ProgramContentDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty({ enum: ContentType })
+  type: ContentType;
+
+  @ApiProperty({ enum: Status })
+  status: Status;
+
+  @ApiPropertyOptional()
+  publishedAt: Date | null;
+}
+
+export class ProgramWithContentsResponseDto extends ProgramResponseDto {
+  @ApiProperty({ type: [ProgramContentDto] })
+  contents: ProgramContentDto[];
 }
 
 /**

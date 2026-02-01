@@ -1,11 +1,7 @@
-/**
- * Query Content DTO
- */
-
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { IsString, IsEnum, IsOptional, IsUUID, IsInt, Min, Max } from "class-validator";
 import { Type } from "class-transformer";
-import { ContentType, Category, Status, Source } from "../../../shared/enums";
+import { ContentType, Category, Status, Source } from "@shared/enums";
 
 /**
  * Pure interface for service layer

@@ -6,8 +6,13 @@
  */
 
 import { Injectable } from "@nestjs/common";
-import { Source } from "../../shared/enums";
-import { IIngestionStrategy, FetchResult, FetchOptions, ExternalContentItem } from "../interfaces/ingestion.interface";
+import { Source } from "@shared/enums/source.enum";
+import {
+  IIngestionStrategy,
+  FetchResult,
+  FetchOptions,
+  ExternalContentItem,
+} from "../interfaces/ingestion.interface";
 
 // Sample Arabic podcast episode titles for realistic demo data
 const SAMPLE_EPISODES = [

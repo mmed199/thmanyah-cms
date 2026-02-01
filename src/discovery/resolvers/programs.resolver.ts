@@ -1,20 +1,20 @@
-/**
- * Programs Resolver
- *
- * GraphQL resolver for Program queries.
- */
-
 import { Resolver, Query, Args, ID, Int, ResolveField, Parent } from "@nestjs/graphql";
 import { ProgramGraphQLType } from "../types/program/program.type";
 import { ContentGraphQLType } from "../types/content/content.type";
 import { PaginatedPrograms } from "../types/search/search.type";
 import { SearchService } from "../services/search.service";
 import { CacheService } from "../services/cache.service";
-import type { IDiscoveryProgramReader } from "../repositories/program-reader.interface";
-import { DISCOVERY_PROGRAM_READER } from "../repositories/program-reader.interface";
-import { Category, ProgramType } from "../../shared/enums";
+import type { IDiscoveryProgramReader } from "../adapters/persistence/program-reader.interface";
+import { DISCOVERY_PROGRAM_READER } from "../adapters/persistence/program-reader.interface";
+import { Category } from "@shared/enums/category.enum";
+import { ProgramType } from "@shared/enums/program-type.enum";
 import { Inject } from "@nestjs/common";
 
+/**
+ * Programs Resolver
+ *
+ * GraphQL resolver for Program queries.
+ */
 @Resolver(() => ProgramGraphQLType)
 export class ProgramsResolver {
   constructor(

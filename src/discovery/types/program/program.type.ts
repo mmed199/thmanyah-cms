@@ -1,9 +1,5 @@
-/**
- * Program GraphQL Type
- */
-
 import { ObjectType, Field, ID, registerEnumType } from "@nestjs/graphql";
-import { ProgramType, Category, Status } from "../../../shared/enums";
+import { ProgramType, Category, Status } from "@shared/enums";
 import { ContentGraphQLType } from "../content/content.type";
 
 // Register enums for GraphQL

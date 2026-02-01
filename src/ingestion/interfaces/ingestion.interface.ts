@@ -4,7 +4,7 @@
  * Strategy pattern types for content ingestion from external sources.
  */
 
-import { Source } from "../../shared/enums";
+import { Source } from "@shared/enums";
 
 // Re-export DTO interfaces for service use
 export type { ImportRequestInput as ImportRequest } from "../dto/import/import-request.dto";

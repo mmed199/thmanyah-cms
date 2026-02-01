@@ -9,14 +9,13 @@ import { Injectable, Logger, OnApplicationBootstrap } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { v4 as uuid } from "uuid";
-import { ProgramOrmEntity, ContentOrmEntity } from "../persistence";
-import {
-  ProgramType,
-  Category,
-  Status,
-  ContentType,
-  Source,
-} from "../enums";
+import { ProgramOrmEntity } from "../persistence/entities/program.orm-entity";
+import { ContentOrmEntity } from "../persistence/entities/content.orm-entity";
+import { ProgramType } from "../enums/program-type.enum";
+import { Category } from "../enums/category.enum";
+import { Status } from "../enums/status.enum";
+import { ContentType } from "../enums/content-type.enum";
+import { Source } from "../enums/source.enum";
 
 @Injectable()
 export class SeederService implements OnApplicationBootstrap {

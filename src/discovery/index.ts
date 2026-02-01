@@ -1,1 +1,1 @@
-export { DiscoveryModule } from "./discovery.module";
+export * from "./discovery.module";

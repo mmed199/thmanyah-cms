@@ -1,10 +1,6 @@
-/**
- * Create Program DTO
- */
-
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsString, IsEnum, IsOptional, IsObject, MaxLength, MinLength } from "class-validator";
-import { ProgramType, Category } from "../../../shared/enums";
+import { ProgramType, Category } from "@shared/enums";
 
 /**
  * Pure interface for service layer

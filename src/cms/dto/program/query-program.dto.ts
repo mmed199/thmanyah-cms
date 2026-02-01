@@ -1,11 +1,7 @@
-/**
- * Query Program DTO
- */
-
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { IsString, IsEnum, IsOptional, IsInt, Min, Max } from "class-validator";
 import { Type } from "class-transformer";
-import { ProgramType, Category, Status } from "../../../shared/enums";
+import { ProgramType, Category, Status } from "@shared/enums";
 
 /**
  * Pure interface for service layer

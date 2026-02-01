@@ -1,25 +1,19 @@
-/**
- * Cache Service
- *
- * Read-through caching for Discovery API with event-driven invalidation.
- */
-
 import { Injectable, Inject } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
-import type { IDiscoveryCache } from "../repositories/cache.interface";
-import { DISCOVERY_CACHE } from "../repositories/cache.interface";
+import type { IDiscoveryCache } from "../adapters/cache/cache.interface";
+import { DISCOVERY_CACHE } from "../adapters/cache/cache.interface";
 import {
   ProgramCreatedEvent,
   ProgramUpdatedEvent,
   ProgramDeletedEvent,
-} from "../../shared/events/program";
+} from "@shared/events/program";
 import {
   ContentCreatedEvent,
   ContentUpdatedEvent,
   ContentPublishedEvent,
   ContentArchivedEvent,
   ContentDeletedEvent,
-} from "../../shared/events/content";
+} from "@shared/events/content";
 
 // Cache key prefixes
 const CACHE_KEYS = {
@@ -38,6 +32,11 @@ const CACHE_TTL = {
   SEARCH: 180, // 3 minutes for search results
 };
 
+/**
+ * Cache Service
+ *
+ * Read-through caching for Discovery API with event-driven invalidation.
+ */
 @Injectable()
 export class CacheService {
   constructor(
@@ -45,8 +44,7 @@ export class CacheService {
     private readonly cache: IDiscoveryCache,
   ) {}
 
-  // ============ Program Caching ============
-
+  // Program Caching
   async getProgram<T>(id: string): Promise<T | null> {
     return this.cache.get<T>(`${CACHE_KEYS.PROGRAM}${id}`);
   }
@@ -63,8 +61,7 @@ export class CacheService {
     await this.cache.set(`${CACHE_KEYS.PROGRAM_CONTENTS}${programId}`, contents, CACHE_TTL.LIST);
   }
 
-  // ============ Content Caching ============
-
+  // Content Caching
   async getContent<T>(id: string): Promise<T | null> {
     return this.cache.get<T>(`${CACHE_KEYS.CONTENT}${id}`);
   }
@@ -73,8 +70,7 @@ export class CacheService {
     await this.cache.set(`${CACHE_KEYS.CONTENT}${id}`, content, CACHE_TTL.ENTITY);
   }
 
-  // ============ Search Caching ============
-
+  // Search Caching
   async getSearchResults<T>(cacheKey: string): Promise<T | null> {
     return this.cache.get<T>(`${CACHE_KEYS.SEARCH}${cacheKey}`);
   }
@@ -101,7 +97,7 @@ export class CacheService {
     return Buffer.from(JSON.stringify(sorted)).toString("base64");
   }
 
-  // ============ Event Handlers for Cache Invalidation ============
+  // Event Handlers for Cache Invalidation
 
   @OnEvent("program.created")
   async handleProgramCreated(_event: ProgramCreatedEvent): Promise<void> {

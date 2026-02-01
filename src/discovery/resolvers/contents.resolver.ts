@@ -1,19 +1,19 @@
-/**
- * Contents Resolver
- *
- * GraphQL resolver for Content queries.
- */
-
 import { Inject } from "@nestjs/common";
 import { Resolver, Query, Args, ID, Int } from "@nestjs/graphql";
 import { ContentGraphQLType } from "../types/content/content.type";
 import { PaginatedContents } from "../types/search/search.type";
 import { SearchService } from "../services/search.service";
 import { CacheService } from "../services/cache.service";
-import type { IDiscoveryContentReader } from "../repositories/content-reader.interface";
-import { DISCOVERY_CONTENT_READER } from "../repositories/content-reader.interface";
-import { Category, ContentType } from "../../shared/enums";
+import type { IDiscoveryContentReader } from "../adapters/persistence/content-reader.interface";
+import { DISCOVERY_CONTENT_READER } from "../adapters/persistence/content-reader.interface";
+import { Category } from "@shared/enums/category.enum";
+import { ContentType } from "@shared/enums/content-type.enum";
 
+/**
+ * Contents Resolver
+ *
+ * GraphQL resolver for Content queries.
+ */
 @Resolver(() => ContentGraphQLType)
 export class ContentsResolver {
   constructor(
