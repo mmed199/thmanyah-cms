@@ -6,21 +6,13 @@ import { RedisModule } from "@nestjs-modules/ioredis";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { join } from "path";
-
-// Shared persistence entities
 import { ContentOrmEntity } from "@shared/persistence/entities/content.orm-entity";
 import { ProgramOrmEntity } from "@shared/persistence/entities/program.orm-entity";
-
-// Resolvers
 import { ProgramsResolver } from "./resolvers/programs.resolver";
 import { ContentsResolver } from "./resolvers/contents.resolver";
 import { SearchResolver } from "./resolvers/search.resolver";
-
-// Services
 import { SearchService } from "./services/search.service";
 import { CacheService } from "./services/cache.service";
-
-// Repositories (interfaces and implementations)
 import { DISCOVERY_CONTENT_READER } from "./adapters/persistence/content-reader.interface";
 import { DISCOVERY_PROGRAM_READER } from "./adapters/persistence/program-reader.interface";
 import { DISCOVERY_CACHE } from "./adapters/cache/cache.interface";

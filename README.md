@@ -255,7 +255,12 @@ Variables:
 cp .env.example .env
 npm install
 
-docker-compose up -d
+# Start via Docker Compose (app + Postgres + Redis)
+docker compose up --build
+# App is available at http://localhost:3000
+
+# Alternatively: start infra only then run locally
+docker compose up -d postgres redis
 npm run start:dev
 ```
 
@@ -263,8 +268,7 @@ Notes:
 
 - The app uses a global `/api` prefix.
 - Swagger is available at `/docs`.
-- In `NODE_ENV=development`, TypeORM uses `synchronize: true` (auto-creates schema on startup).
-- `npm run migration:run` is currently not applicable because the repo does not include `src/migrations/`.
+- In `NODE_ENV=development`, TypeORM can run migrations via `npm run migration:run` (see **Database migrations**).
 
 ## Seed / demo data
 
@@ -276,6 +280,12 @@ A seeder runs automatically on application bootstrap and seeds only if the datab
 npm test
 npm run test:e2e
 ```
+
+## Database migrations
+
+- Generate new migration: `npm run migration:generate -- src/migrations/<name>`
+- Run migrations (locally or inside the Docker container): `npm run migration:run`
+- Initial migration (`src/migrations/1710000000000-initial-schema.ts`) creates tables, enums, and full-text-search indexes (`tsvector` + GIN) for both `programs` and `content`.
 
 ## Challenges / trade-offs / improvements
 

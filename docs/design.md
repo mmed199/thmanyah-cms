@@ -281,14 +281,26 @@ erDiagram
 The `search_vector` column enables PostgreSQL full-text search:
 
 ```sql
--- Generated column for full-text search
+-- Generated column for full-text search (Arabic dictionary)
 ALTER TABLE content ADD COLUMN search_vector tsvector
   GENERATED ALWAYS AS (
-    to_tsvector('simple', coalesce(title,'') || ' ' || coalesce(description,''))
+    to_tsvector(
+      'arabic',
+      coalesce(title, '') || ' ' || coalesce(description, '')
+    )
   ) STORED;
 
--- GIN index for fast search
+ALTER TABLE program ADD COLUMN search_vector tsvector
+  GENERATED ALWAYS AS (
+    to_tsvector(
+      'arabic',
+      coalesce(title, '') || ' ' || coalesce(description, '')
+    )
+  ) STORED;
+
+-- GIN indexes for fast search
 CREATE INDEX idx_content_search ON content USING GIN(search_vector);
+CREATE INDEX idx_program_search ON program USING GIN(search_vector);
 ```
 
 ### Enums
@@ -695,42 +707,50 @@ export class MockYouTubeStrategy implements ImportStrategy {
 | `GET`    | `/api/cms/programs/:id`         | Get program               |
 | `PUT`    | `/api/cms/programs/:id`         | Update program            |
 | `DELETE` | `/api/cms/programs/:id`         | Delete program            |
-| `GET`    | `/api/cms/programs/:id/content` | List content in program   |
+| `GET`    | `/api/cms/programs/:id/with-contents` | Program + contents summary |
 
 #### Content
 
 | Method   | Endpoint               | Description                       |
 | -------- | ---------------------- | --------------------------------- |
-| `POST`   | `/api/cms/content`     | Create content                    |
-| `GET`    | `/api/cms/content`     | List content (paginated)          |
-| `GET`    | `/api/cms/content/:id` | Get content                       |
-| `PUT`    | `/api/cms/content/:id` | Update content (including status) |
-| `DELETE` | `/api/cms/content/:id` | Delete content                    |
+| `POST`   | `/api/cms/contents`     | Create content                    |
+| `GET`    | `/api/cms/contents`     | List content (paginated)          |
+| `GET`    | `/api/cms/contents/:id` | Get content                       |
+| `PUT`    | `/api/cms/contents/:id` | Update content (including status) |
+| `DELETE` | `/api/cms/contents/:id` | Delete content                    |
+| `POST`   | `/api/cms/contents/:id/publish` | Publish content                |
+| `POST`   | `/api/cms/contents/:id/archive` | Archive content                |
 
-#### Import
+#### Ingestion
 
-| Method | Endpoint                  | Description                 |
-| ------ | ------------------------- | --------------------------- |
-| `POST` | `/api/cms/import/youtube` | Trigger mock YouTube import |
+| Method | Endpoint                      | Description                       |
+| ------ | ----------------------------- | --------------------------------- |
+| `GET`  | `/api/cms/ingestion/sources`  | List available import strategies  |
+| `POST` | `/api/cms/ingestion/import`   | Trigger import for given `source` |
 
 **Import Request/Response:**
 
 ```http
-POST /api/cms/import/youtube
+POST /api/cms/ingestion/import
 Content-Type: application/json
 
 {
-  "playlistId": "demo",
+  "source": "youtube",
+  "channelId": "UC_demo_channel_1",
   "programId": "550e8400-e29b-41d4-a716-446655440000",
-  "count": 5,
-  "category": "culture"
+  "contentType": "podcast_episode",
+  "category": "culture",
+  "maxResults": 5
 }
 ```
 
 ```http
-HTTP/1.1 200 OK
+HTTP/1.1 201 Created
 
 {
+  "source": "youtube",
+  "channelId": "UC_demo_channel_1",
+  "programId": "550e8400-e29b-41d4-a716-446655440000",
   "imported": 5,
   "skipped": 0,
   "errors": []
@@ -776,76 +796,100 @@ HTTP/1.1 201 Created
 
 ```graphql
 type Query {
-  # Programs
-  programs(filter: ProgramFilter, pagination: Pagination): ProgramConnection!
+  programs(input: ProgramsQueryInput = {}): ProgramConnection!
   program(id: ID!): Program
 
-  # Content
-  contents(filter: ContentFilter, pagination: Pagination): ContentConnection!
+  contents(input: ContentsQueryInput = {}): ContentConnection!
   content(id: ID!): Content
 
-  # Search
-  search(query: String!, filter: SearchFilter, pagination: Pagination): SearchResult!
+  search(input: SearchInput!): SearchResult!
 }
 
 type Program {
   id: ID!
   title: String!
-  description: String!
+  description: String
   type: ProgramType!
   category: Category!
   language: String!
   metadata: JSON
   contentCount: Int!
-  contents(pagination: Pagination): ContentConnection!
+  contents(limit: Int = 20, offset: Int = 0): [Content!]!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
 
 type Content {
   id: ID!
-  program: Program
+  programId: ID
   title: String!
-  description: String!
+  description: String
   type: ContentType!
   category: Category!
   language: String!
   metadata: JSON
+  source: Source!
+  status: Status!
   publishedAt: DateTime
   createdAt: DateTime!
   updatedAt: DateTime!
 }
 
-type SearchResult {
-  items: [SearchItem!]!
+type ProgramConnection {
+  nodes: [Program!]!
   total: Int!
-  took: Int!
+  hasMore: Boolean!
 }
 
-union SearchItem = Program | Content
+type ContentConnection {
+  nodes: [Content!]!
+  total: Int!
+  hasMore: Boolean!
+}
 
-input ProgramFilter {
+type SearchResult {
+  items: [SearchResultItem!]!
+  total: Int!
+  limit: Int!
+  offset: Int!
+  query: String
+}
+
+type SearchResultItem {
+  program: Program
+  content: Content
+  score: Float!
+}
+
+input ProgramsQueryInput {
+  category: Category
   type: ProgramType
-  category: Category
   language: String
+  limit: Int = 20
+  offset: Int = 0
+  sortBy: SortField = RELEVANCE
+  sortOrder: SortOrder = DESC
 }
 
-input ContentFilter {
+input ContentsQueryInput {
   programId: ID
-  type: ContentType
   category: Category
+  type: ContentType
   language: String
+  limit: Int = 20
+  offset: Int = 0
+  sortBy: SortField = RELEVANCE
+  sortOrder: SortOrder = DESC
 }
 
-input SearchFilter {
-  types: [ContentType!]
+input SearchInput {
+  query: String
   categories: [Category!]
+  contentTypes: [ContentType!]
+  programTypes: [ProgramType!]
   language: String
-  publishedAfter: DateTime
-  publishedBefore: DateTime
-}
-
-input Pagination {
+  sortBy: SortField = RELEVANCE
+  sortOrder: SortOrder = DESC
   limit: Int = 20
   offset: Int = 0
 }
@@ -1085,12 +1129,14 @@ flowchart LR
 
 **Cache Keys & TTL:**
 
-| Data                 | TTL   | Key Pattern                    |
-| -------------------- | ----- | ------------------------------ |
-| Single content       | 5 min | `content:{id}`                 |
-| Single program       | 5 min | `program:{id}`                 |
-| Program with content | 5 min | `program:{id}:contents`        |
-| Search results       | 1 min | `search:{hash(query+filters)}` |
+| Data                      | TTL    | Key Pattern                              |
+| ------------------------- | ------ | ---------------------------------------- |
+| Single program (Discovery) | 1 hour | `discovery:program:{id}`                 |
+| Program contents list     | 5 min  | `discovery:program_contents:{id}`        |
+| Program list (filters)    | 5 min  | `discovery:programs:{filterHash}`        |
+| Single content            | 1 hour | `discovery:content:{id}`                 |
+| Content list (filters)    | 5 min  | `discovery:contents:{filterHash}`        |
+| Search results            | 3 min  | `discovery:search:{hash(query+filters)}` |
 
 **Cache Service:**
 
@@ -1192,98 +1238,46 @@ flowchart TB
 src/
 ├── shared/                             # 📦 Shared Types (no business logic)
 │   ├── entities/
-│   │   ├── program.entity.ts           # Pure domain entity
-│   │   ├── content.entity.ts           # Pure domain entity
-│   │   ├── metadata/                   # Metadata interfaces
-│   │   │   ├── content-metadata.interface.ts
-│   │   │   └── program-metadata.interface.ts
+│   │   ├── program.entity.ts
+│   │   ├── content.entity.ts
+│   │   ├── metadata/
 │   │   └── index.ts
-│   ├── enums/
-│   │   ├── content-type.enum.ts
-│   │   ├── category.enum.ts
-│   │   ├── status.enum.ts
-│   │   └── index.ts
-│   ├── events/
-│   │   ├── domain-event.ts             # Base event class
-│   │   ├── content/                    # Content events (one file per event)
-│   │   │   ├── content-created.event.ts
-│   │   │   ├── content-published.event.ts
-│   │   │   └── index.ts
-│   │   ├── program/                    # Program events
-│   │   │   ├── program-created.event.ts
-│   │   │   └── index.ts
-│   │   └── index.ts
+│   ├── enums/                          # ContentType, Category, Status, etc.
+│   ├── events/                         # Domain + integration events
 │   └── persistence/
-│       └── entities/                   # TypeORM ORM entities (DB mapping)
-│           ├── program.orm-entity.ts
-│           └── content.orm-entity.ts
+│       ├── entities/                   # TypeORM entities
+│       ├── mappers/                    # ORM ↔ domain mappers
+│       └── repositories/               # Base repositories (if any)
 │
-├── cms/                                # ✏️ CMS Module (Self-Contained)
-│   ├── repositories/                   # Interfaces + Implementations
-│   │   ├── content.repository.interface.ts  # ICmsContentRepository
-│   │   ├── content.repository.ts            # TypeORM implementation
-│   │   ├── program.repository.interface.ts  # ICmsProgramRepository
-│   │   ├── program.repository.ts            # TypeORM implementation
-│   │   ├── event-publisher.interface.ts     # ICmsEventPublisher
-│   │   └── event-publisher.ts               # EventEmitter implementation
-│   ├── controllers/
-│   │   ├── program.controller.ts
-│   │   ├── content.controller.ts
-│   │   └── import.controller.ts
+├── cms/                                # ✏️ CMS Module
+│   ├── controllers/                    # programs.controller.ts, contents.controller.ts
 │   ├── dto/
-│   │   ├── create-program.dto.ts
-│   │   ├── create-content.dto.ts
-│   │   └── ...
 │   ├── services/
-│   │   ├── content.service.ts          # CMS business logic
-│   │   └── program.service.ts
+│   ├── adapters/
+│   │   ├── messaging/                  # EventEmitter adapters
+│   │   └── persistence/                # Repositories (TypeORM)
 │   └── cms.module.ts
 │
-├── discovery/                          # 🔍 Discovery Module (Self-Contained)
-│   ├── repositories/                   # Interfaces + Implementations
-│   │   ├── content-reader.interface.ts  # IDiscoveryContentReader (read-only)
-│   │   ├── content-reader.ts            # TypeORM implementation
-│   │   ├── program-reader.interface.ts  # IDiscoveryProgramReader (read-only)
-│   │   ├── program-reader.ts            # TypeORM implementation
-│   │   ├── cache.interface.ts           # IDiscoveryCache
-│   │   └── cache.ts                     # Redis implementation
+├── discovery/                          # 🔍 Discovery Module
 │   ├── resolvers/
-│   │   ├── program.resolver.ts
-│   │   ├── content.resolver.ts
-│   │   └── search.resolver.ts
-│   ├── services/
-│   │   ├── search.service.ts           # PostgreSQL full-text search
-│   │   └── cache.service.ts            # Cache orchestration + invalidation
-│   ├── dto/
+│   ├── types/
+│   ├── services/                       # search.service.ts, cache.service.ts
+│   ├── adapters/
+│   │   ├── cache/                      # Redis cache port
+│   │   └── persistence/                # Read-only repositories
 │   └── discovery.module.ts
 │
-├── ingestion/                          # 📥 Ingestion Module (Self-Contained)
-│   ├── repositories/                   # Interfaces + Implementations
-│   │   ├── content-writer.interface.ts  # IIngestionContentWriter
-│   │   ├── content-writer.ts            # TypeORM implementation
-│   │   ├── program-repository.interface.ts
-│   │   ├── program-repository.ts
-│   │   ├── event-publisher.interface.ts # IIngestionEventPublisher
-│   │   └── event-publisher.ts           # EventEmitter implementation
-│   ├── strategies/
-│   │   ├── import.strategy.ts          # Strategy interface
-│   │   └── mock-youtube.strategy.ts
+├── ingestion/                          # 📥 Ingestion Module
+│   ├── controllers/
+│   ├── dto/
 │   ├── services/
-│   │   └── ingestion.service.ts
+│   ├── strategies/                     # Import strategies
+│   ├── adapters/
+│   │   ├── messaging/
+│   │   └── persistence/
 │   └── ingestion.module.ts
 │
-├── infrastructure/                     # ⚙️ Shared Infrastructure
-│   ├── persistence/
-│   │   ├── typeorm.module.ts           # TypeORM configuration
-│   │   └── migrations/
-│   │       └── 1704067200000-CreateProgramsAndContent.ts
-│   └── infrastructure.module.ts
-│
-├── config/
-│   ├── app.config.ts
-│   ├── database.config.ts
-│   └── redis.config.ts
-│
+├── config/                             # Global configuration (env, redis, typeorm)
 ├── app.module.ts
 └── main.ts
 ```

@@ -43,5 +43,6 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}/api`);
   console.log(`📚 Swagger docs available at: http://localhost:${port}/docs`);
+  console.log(`🎮 GraphQL Playground at: http://localhost:${port}/graphql`);
 }
 bootstrap();

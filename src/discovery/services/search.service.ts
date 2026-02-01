@@ -50,33 +50,8 @@ export class SearchService {
     private readonly programRepository: Repository<ProgramOrmEntity>,
   ) {}
 
-  private fullTextSearchAvailable: boolean | null = null;
-
-  /**
-   * Check if full-text search is available (search_vector column exists)
-   */
-  private async checkFullTextSearchAvailable(): Promise<boolean> {
-    if (this.fullTextSearchAvailable !== null) {
-      return this.fullTextSearchAvailable;
-    }
-
-    try {
-      await this.contentRepository.query(
-        "SELECT column_name FROM information_schema.columns WHERE table_name = 'content' AND column_name = 'search_vector'",
-      );
-      const result = await this.contentRepository.query(
-        "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'content' AND column_name = 'search_vector') as exists",
-      );
-      this.fullTextSearchAvailable = result[0]?.exists === true;
-    } catch {
-      this.fullTextSearchAvailable = false;
-    }
-    return this.fullTextSearchAvailable;
-  }
-
   /**
    * Search contents using PostgreSQL full-text search
-   * Falls back to LIKE search if search_vector column doesn't exist
    */
   async searchContents(params: SearchQuery): Promise<{ items: Content[]; total: number }> {
     const {
@@ -90,24 +65,15 @@ export class SearchService {
       offset = 0,
     } = params;
 
-    const useFts = await this.checkFullTextSearchAvailable();
-
     let qb = this.contentRepository
       .createQueryBuilder("content")
       .where("content.status = :status", { status: Status.PUBLISHED });
 
     // Full-text search or fallback to LIKE
     if (query) {
-      if (useFts) {
-        qb = qb
-          .addSelect("ts_rank(content.search_vector, plainto_tsquery('arabic', :query))", "rank")
-          .andWhere("content.search_vector @@ plainto_tsquery('arabic', :query)", { query });
-      } else {
-        // Fallback to LIKE search
-        qb = qb.andWhere("(content.title ILIKE :search OR content.description ILIKE :search)", {
-          search: `%${query}%`,
-        });
-      }
+      qb = qb
+        .addSelect("ts_rank(content.search_vector, plainto_tsquery('arabic', :query))", "rank")
+        .andWhere("content.search_vector @@ plainto_tsquery('arabic', :query)", { query });
     }
 
     // Filters
@@ -122,7 +88,7 @@ export class SearchService {
     }
 
     // Sorting - only pass hasRank=true if using FTS (which adds rank column)
-    const hasRank = useFts && !!query;
+    const hasRank = !!query;
     qb = this.applySorting(qb, "content", sortBy, sortOrder, hasRank);
 
     // Get total count
@@ -154,24 +120,15 @@ export class SearchService {
       offset = 0,
     } = params;
 
-    const useFts = await this.checkFullTextSearchAvailable();
-
     let qb = this.programRepository
       .createQueryBuilder("program")
       .where("program.status = :status", { status: Status.PUBLISHED });
 
     // Full-text search or fallback to LIKE
     if (query) {
-      if (useFts) {
-        qb = qb
-          .addSelect("ts_rank(program.search_vector, plainto_tsquery('arabic', :query))", "rank")
-          .andWhere("program.search_vector @@ plainto_tsquery('arabic', :query)", { query });
-      } else {
-        // Fallback to LIKE search
-        qb = qb.andWhere("(program.title ILIKE :search OR program.description ILIKE :search)", {
-          search: `%${query}%`,
-        });
-      }
+      qb = qb
+        .addSelect("ts_rank(program.search_vector, plainto_tsquery('arabic', :query))", "rank")
+        .andWhere("program.search_vector @@ plainto_tsquery('arabic', :query)", { query });
     }
 
     // Filters
@@ -186,7 +143,7 @@ export class SearchService {
     }
 
     // Sorting - only pass hasRank=true if using FTS (which adds rank column)
-    const hasRank = useFts && !!query;
+    const hasRank = !!query;
     qb = this.applySorting(qb, "program", sortBy, sortOrder, hasRank);
 
     // Get total count
