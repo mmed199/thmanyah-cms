@@ -1,3 +1,10 @@
+/**
+ * Content ORM Entity
+ *
+ * TypeORM entity for database persistence.
+ * This is separate from the domain entity to keep domain pure.
+ */
+
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,42 +13,35 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from "typeorm";
-import { ContentType } from "../enums/content-type.enum";
-import { Category } from "../enums/category.enum";
-import { Status } from "../enums/status.enum";
-import { Source } from "../enums/source.enum";
-import { Program } from "./program.entity";
+import { ContentType, Category, Status, Source } from "../../enums";
+import { ProgramOrmEntity } from "./program.orm-entity";
 
-export interface ContentMetadata {
-  duration?: number; // seconds
-  episodeNumber?: number;
-  seasonNumber?: number;
-  guests?: string[];
-  thumbnailUrl?: string;
-  [key: string]: unknown;
-}
-
-@Entity("contents")
-export class Content {
+@Entity("content")
+@Index("idx_content_external_source", ["source", "externalId"], {
+  unique: true,
+  where: '"external_id" IS NOT NULL',
+})
+export class ContentOrmEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column({ name: "program_id", type: "uuid", nullable: true })
   programId: string | null;
 
-  @ManyToOne(() => Program, (program) => program.contents, {
+  @ManyToOne(() => ProgramOrmEntity, (program) => program.contents, {
     nullable: true,
     onDelete: "CASCADE",
   })
   @JoinColumn({ name: "program_id" })
-  program: Program;
+  program: ProgramOrmEntity | null;
 
-  @Column({ type: "varchar", length: 255 })
+  @Column({ type: "varchar", length: 500 })
   title: string;
 
   @Column({ type: "text", nullable: true })
-  description: string;
+  description: string | null;
 
   @Column({
     type: "enum",
@@ -76,7 +76,7 @@ export class Content {
   externalId: string | null;
 
   @Column({ type: "jsonb", nullable: true })
-  metadata: ContentMetadata;
+  metadata: Record<string, unknown> | null;
 
   @Column({ name: "published_at", type: "timestamp", nullable: true })
   publishedAt: Date | null;

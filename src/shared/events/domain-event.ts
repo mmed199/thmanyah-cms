@@ -1,3 +1,6 @@
+/**
+ * Base Domain Event
+ */
 export abstract class DomainEvent {
   public readonly occurredAt: Date;
 

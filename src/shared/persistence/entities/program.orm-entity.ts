@@ -1,3 +1,10 @@
+/**
+ * Program ORM Entity
+ *
+ * TypeORM entity for database persistence.
+ * This is separate from the domain entity to keep domain pure.
+ */
+
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,21 +13,11 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import { ProgramType } from "../enums/program-type.enum";
-import { Category } from "../enums/category.enum";
-import { Status } from "../enums/status.enum";
-import { Content } from "./content.entity";
-
-export interface ProgramMetadata {
-  hostName?: string;
-  rssFeedUrl?: string;
-  totalEpisodes?: number;
-  coverImageUrl?: string;
-  [key: string]: unknown;
-}
+import { ProgramType, Category, Status } from "../../enums";
+import { ContentOrmEntity } from "./content.orm-entity";
 
 @Entity("programs")
-export class Program {
+export class ProgramOrmEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
@@ -28,7 +25,7 @@ export class Program {
   title: string;
 
   @Column({ type: "text", nullable: true })
-  description: string;
+  description: string | null;
 
   @Column({
     type: "enum",
@@ -53,7 +50,7 @@ export class Program {
   status: Status;
 
   @Column({ type: "jsonb", nullable: true })
-  metadata: ProgramMetadata;
+  metadata: Record<string, unknown> | null;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
@@ -61,6 +58,6 @@ export class Program {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
 
-  @OneToMany(() => Content, (content) => content.program)
-  contents: Content[];
+  @OneToMany(() => ContentOrmEntity, (content) => content.program)
+  contents: ContentOrmEntity[];
 }
