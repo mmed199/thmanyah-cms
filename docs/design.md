@@ -54,15 +54,15 @@ flowchart TB
 
     subgraph Application["🏗️ NestJS Modular Monolith"]
         subgraph CMS["📝 CMS Module"]
-            CMSPorts["Ports + Adapters"]
+            CMSRepos["Repositories"]
             CMSAPI["REST API"]
         end
         subgraph Discovery["🔍 Discovery Module"]
-            DiscPorts["Ports + Adapters"]
+            DiscRepos["Repositories"]
             DiscAPI["GraphQL API"]
         end
         subgraph Ingestion["📥 Ingestion Module"]
-            IngPorts["Ports + Adapters"]
+            IngRepos["Repositories"]
             IngStrat["Import Strategies"]
         end
         Shared["📦 Shared<br>(Entities, Events, Enums)"]
@@ -76,18 +76,18 @@ flowchart TB
     Editors --> CMSAPI
     Users --> DiscAPI
 
-    CMSAPI --> CMSPorts
-    CMSPorts --> Shared
-    CMSPorts --> PG
+    CMSAPI --> CMSRepos
+    CMSRepos --> Shared
+    CMSRepos --> PG
 
-    DiscAPI --> DiscPorts
-    DiscPorts --> Shared
-    DiscPorts --> PG
-    DiscPorts --> Redis
+    DiscAPI --> DiscRepos
+    DiscRepos --> Shared
+    DiscRepos --> PG
+    DiscRepos --> Redis
 
-    IngStrat --> IngPorts
-    IngPorts --> Shared
-    IngPorts --> PG
+    IngStrat --> IngRepos
+    IngRepos --> Shared
+    IngRepos --> PG
 
     style Editors fill:#a8e6cf,stroke:#2d6a4f,color:#1b4332
     style Users fill:#ffd166,stroke:#d4a012,color:#6b5900
@@ -114,13 +114,13 @@ We chose a **modular monolith** with **clean architecture principles** to:
 
 ### SOLID Compliance
 
-| Principle                     | Implementation                                              |
-| ----------------------------- | ----------------------------------------------------------- |
-| **S** — Single Responsibility | Each module has one reason to change                        |
-| **O** — Open/Closed           | Import strategies extensible without modification           |
-| **L** — Liskov Substitution   | Repository adapters can be swapped (test/prod)              |
-| **I** — Interface Segregation | Each module defines only the interfaces it needs            |
-| **D** — Dependency Inversion  | Modules depend on their own ports, not implementations      |
+| Principle                     | Implementation                                         |
+| ----------------------------- | ------------------------------------------------------ |
+| **S** — Single Responsibility | Each module has one reason to change                   |
+| **O** — Open/Closed           | Import strategies extensible without modification      |
+| **L** — Liskov Substitution   | Repository adapters can be swapped (test/prod)         |
+| **I** — Interface Segregation | Each module defines only the interfaces it needs       |
+| **D** — Dependency Inversion  | Modules depend on their own ports, not implementations |
 
 ### Key Architectural Decisions
 
@@ -134,7 +134,7 @@ We chose a **modular monolith** with **clean architecture principles** to:
 
 ### Module Boundaries & Dependency Flow
 
-Each module is **self-contained** with its own ports and adapters, achieving true loose coupling:
+Each module is **self-contained** with its own repositories (interfaces + implementations), achieving true loose coupling:
 
 ```mermaid
 flowchart TB
@@ -146,20 +146,17 @@ flowchart TB
     end
 
     subgraph CMS["📝 CMS Module (Self-Contained)"]
-        CMSPorts["🔌 Ports<br>(ICmsContentRepo, ICmsProgramRepo)"]
-        CMSAdapters["⚙️ Adapters<br>(implements ports)"]
+        CMSRepos["📁 repositories/<br>(*.interface.ts + *.ts)"]
         CMSControllers["🎮 Controllers"]
     end
 
     subgraph Discovery["🔍 Discovery Module (Self-Contained)"]
-        DiscPorts["🔌 Ports<br>(IContentReader, IProgramReader, ICache)"]
-        DiscAdapters["⚙️ Adapters<br>(implements ports)"]
+        DiscRepos["📁 repositories/<br>(*.interface.ts + *.ts)"]
         DiscResolvers["📊 Resolvers"]
     end
 
     subgraph Ingestion["📥 Ingestion Module (Self-Contained)"]
-        IngPorts["🔌 Ports<br>(IContentWriter, IEventPublisher)"]
-        IngAdapters["⚙️ Adapters<br>(implements ports)"]
+        IngRepos["📁 repositories/<br>(*.interface.ts + *.ts)"]
         IngServices["🔧 Services"]
     end
 
@@ -168,23 +165,20 @@ flowchart TB
         Redis[("🔴 Redis")]
     end
 
-    CMSControllers --> CMSPorts
-    CMSAdapters -.->|implements| CMSPorts
-    CMSAdapters --> ORM
-    CMSAdapters --> Entities
+    CMSControllers --> CMSRepos
+    CMSRepos --> ORM
+    CMSRepos --> Entities
 
-    DiscResolvers --> DiscPorts
-    DiscAdapters -.->|implements| DiscPorts
-    DiscAdapters --> ORM
-    DiscAdapters --> Entities
+    DiscResolvers --> DiscRepos
+    DiscRepos --> ORM
+    DiscRepos --> Entities
 
-    IngServices --> IngPorts
-    IngAdapters -.->|implements| IngPorts
-    IngAdapters --> ORM
-    IngAdapters --> Entities
+    IngServices --> IngRepos
+    IngRepos --> ORM
+    IngRepos --> Entities
 
     ORM --> PG
-    DiscAdapters --> Redis
+    DiscRepos --> Redis
 
     style CMS fill:#74c0fc,stroke:#1971c2,color:#0c4a6e
     style Discovery fill:#b197fc,stroke:#7048e8,color:#3b1d8f
@@ -202,18 +196,19 @@ flowchart TB
 
 > **Modules are self-contained and don't depend on each other.**
 
-- Each module owns its **ports** (interfaces) — only what it needs
-- Each module owns its **adapters** (implementations)
+- Each module owns its **repositories/** folder with interfaces and implementations
+- `*.interface.ts` files define the contract (with injection tokens)
+- `*.ts` files provide the implementation
 - `shared/` contains only: entities, enums, events, ORM entities (no business logic)
 - Modules can be extracted to microservices independently
 
 **What Each Module Owns:**
 
-| Module      | Ports (Interfaces)                           | Purpose                          |
-| ----------- | -------------------------------------------- | -------------------------------- |
-| **CMS**     | `ICmsContentRepository`, `ICmsProgramRepository` | Full CRUD operations             |
-| **Discovery** | `IContentReader`, `IProgramReader`, `ICachePort` | Read-only + caching              |
-| **Ingestion** | `IContentWriter`, `IEventPublisher`          | Write + event publishing         |
+| Module        | Repository Interfaces                                       | Purpose                  |
+| ------------- | ----------------------------------------------------------- | ------------------------ |
+| **CMS**       | `ICmsContentRepository`, `ICmsProgramRepository`            | Full CRUD operations     |
+| **Discovery** | `IDiscoveryContentReader`, `IDiscoveryProgramReader`, `IDiscoveryCache` | Read-only + caching      |
+| **Ingestion** | `IIngestionContentWriter`, `IIngestionProgramRepository`, `IIngestionEventPublisher`              | Write + event publishing |
 
 ---
 
@@ -445,8 +440,12 @@ export class CmsContentRepositoryAdapter implements ICmsContentRepository {
     private readonly ormRepo: Repository<ContentOrmEntity>,
   ) {}
 
-  async save(content: Content): Promise<Content> { /* ... */ }
-  async findById(id: string): Promise<Content | null> { /* ... */ }
+  async save(content: Content): Promise<Content> {
+    /* ... */
+  }
+  async findById(id: string): Promise<Content | null> {
+    /* ... */
+  }
   // Only methods CMS needs!
 }
 ```
@@ -483,7 +482,10 @@ export const CONTENT_READER = Symbol("CONTENT_READER");
 
 export interface IContentReader {
   findById(id: string): Promise<Content | null>;
-  findPublished(filter: ContentFilter, pagination: PaginationOptions): Promise<PaginatedResult<Content>>;
+  findPublished(
+    filter: ContentFilter,
+    pagination: PaginationOptions,
+  ): Promise<PaginatedResult<Content>>;
   search(query: string, filters: SearchFilters): Promise<SearchResult>;
   // No save(), no delete() - Discovery doesn't need them!
 }
@@ -1217,14 +1219,13 @@ src/
 │           └── content.orm-entity.ts
 │
 ├── cms/                                # ✏️ CMS Module (Self-Contained)
-│   ├── ports/                          # CMS-specific interfaces
-│   │   ├── content.repository.port.ts  # ICmsContentRepository
-│   │   ├── program.repository.port.ts  # ICmsProgramRepository
-│   │   └── index.ts
-│   ├── adapters/                       # CMS-specific implementations
-│   │   ├── content.repository.adapter.ts
-│   │   ├── program.repository.adapter.ts
-│   │   └── index.ts
+│   ├── repositories/                   # Interfaces + Implementations
+│   │   ├── content.repository.interface.ts  # ICmsContentRepository
+│   │   ├── content.repository.ts            # TypeORM implementation
+│   │   ├── program.repository.interface.ts  # ICmsProgramRepository
+│   │   ├── program.repository.ts            # TypeORM implementation
+│   │   ├── event-publisher.interface.ts     # ICmsEventPublisher
+│   │   └── event-publisher.ts               # EventEmitter implementation
 │   ├── controllers/
 │   │   ├── program.controller.ts
 │   │   ├── content.controller.ts
@@ -1239,16 +1240,13 @@ src/
 │   └── cms.module.ts
 │
 ├── discovery/                          # 🔍 Discovery Module (Self-Contained)
-│   ├── ports/                          # Discovery-specific interfaces
-│   │   ├── content.reader.port.ts      # IContentReader (read-only)
-│   │   ├── program.reader.port.ts      # IProgramReader (read-only)
-│   │   ├── cache.port.ts               # ICachePort
-│   │   └── index.ts
-│   ├── adapters/                       # Discovery-specific implementations
-│   │   ├── content.reader.adapter.ts
-│   │   ├── program.reader.adapter.ts
-│   │   ├── redis-cache.adapter.ts
-│   │   └── index.ts
+│   ├── repositories/                   # Interfaces + Implementations
+│   │   ├── content-reader.interface.ts  # IDiscoveryContentReader (read-only)
+│   │   ├── content-reader.ts            # TypeORM implementation
+│   │   ├── program-reader.interface.ts  # IDiscoveryProgramReader (read-only)
+│   │   ├── program-reader.ts            # TypeORM implementation
+│   │   ├── cache.interface.ts           # IDiscoveryCache
+│   │   └── cache.ts                     # Redis implementation
 │   ├── resolvers/
 │   │   ├── program.resolver.ts
 │   │   ├── content.resolver.ts
@@ -1260,14 +1258,13 @@ src/
 │   └── discovery.module.ts
 │
 ├── ingestion/                          # 📥 Ingestion Module (Self-Contained)
-│   ├── ports/                          # Ingestion-specific interfaces
-│   │   ├── content.writer.port.ts      # IContentWriter
-│   │   ├── event-publisher.port.ts     # IEventPublisher
-│   │   └── index.ts
-│   ├── adapters/                       # Ingestion-specific implementations
-│   │   ├── content.writer.adapter.ts
-│   │   ├── event-emitter.adapter.ts
-│   │   └── index.ts
+│   ├── repositories/                   # Interfaces + Implementations
+│   │   ├── content-writer.interface.ts  # IIngestionContentWriter
+│   │   ├── content-writer.ts            # TypeORM implementation
+│   │   ├── program-repository.interface.ts
+│   │   ├── program-repository.ts
+│   │   ├── event-publisher.interface.ts # IIngestionEventPublisher
+│   │   └── event-publisher.ts           # EventEmitter implementation
 │   ├── strategies/
 │   │   ├── import.strategy.ts          # Strategy interface
 │   │   └── mock-youtube.strategy.ts
@@ -1293,25 +1290,26 @@ src/
 
 ### Key Design Decisions
 
-| Decision                                               | Rationale                                               |
-| ------------------------------------------------------ | ------------------------------------------------------- |
-| `shared/entities/` are **pure classes**                | No TypeORM decorators — domain stays framework-free     |
-| `shared/persistence/entities/` are **ORM entities**    | Separate DB mapping from domain logic                   |
-| Each module owns its **ports**                         | Interface Segregation — modules see only what they need |
-| Each module owns its **adapters**                      | True loose coupling — modules can be extracted          |
-| `shared/` has **no business logic**                    | Only types, entities, enums, events                     |
+| Decision                                            | Rationale                                               |
+| --------------------------------------------------- | ------------------------------------------------------- |
+| `shared/entities/` are **pure classes**             | No TypeORM decorators — domain stays framework-free     |
+| `shared/persistence/entities/` are **ORM entities** | Separate DB mapping from domain logic                   |
+| Each module owns its **repositories/**              | Single folder with `*.interface.ts` + `*.ts` pairs      |
+| Interfaces colocated with implementations           | Easy to find, navigate, and understand relationships    |
+| `shared/` has **no business logic**                 | Only types, entities, enums, events                     |
 
 ### Module Independence
 
 Each module is **self-contained** and can be extracted to a microservice:
 
-| Module        | Owns                           | Depends On       |
-| ------------- | ------------------------------ | ---------------- |
-| **CMS**       | Ports, Adapters, Controllers   | shared/, TypeORM |
-| **Discovery** | Ports, Adapters, Resolvers     | shared/, TypeORM, Redis |
-| **Ingestion** | Ports, Adapters, Strategies    | shared/, TypeORM |
+| Module        | Owns                                | Depends On              |
+| ------------- | ----------------------------------- | ----------------------- |
+| **CMS**       | Repositories, Controllers, Services | shared/, TypeORM        |
+| **Discovery** | Repositories, Resolvers, Services   | shared/, TypeORM, Redis |
+| **Ingestion** | Repositories, Strategies, Services  | shared/, TypeORM        |
 
 **Benefits:**
+
 - ✅ Modules don't depend on each other
 - ✅ Each module can be tested in isolation
 - ✅ Easy to extract to microservice (take module folder)
@@ -1323,26 +1321,28 @@ Each module is **self-contained** and can be extracted to a microservice:
 
 ### Simplifications Made (Interview Scope)
 
-| Original Design           | Simplified To               | Why                                         |
-| ------------------------- | --------------------------- | ------------------------------------------- |
-| NATS JetStream            | In-process EventEmitter     | No external messaging infra needed for demo |
-| Elasticsearch             | PostgreSQL Full-Text Search | One less service, sufficient for scope      |
-| NATS KV                   | Redis                       | Standard, well-known cache solution         |
-| Protobuf schemas          | TypeScript classes          | No code generation, simpler DX              |
-| Job tracking system       | Sync idempotent import      | Simpler flow, no job state management       |
+| Original Design     | Simplified To               | Why                                         |
+| ------------------- | --------------------------- | ------------------------------------------- |
+| NATS JetStream      | In-process EventEmitter     | No external messaging infra needed for demo |
+| Elasticsearch       | PostgreSQL Full-Text Search | One less service, sufficient for scope      |
+| NATS KV             | Redis                       | Standard, well-known cache solution         |
+| Protobuf schemas    | TypeScript classes          | No code generation, simpler DX              |
+| Job tracking system | Sync idempotent import      | Simpler flow, no job state management       |
 
 ### Architecture Decisions
 
-| Decision                       | Alternative Considered         | Why We Chose This                                                |
-| ------------------------------ | ------------------------------ | ---------------------------------------------------------------- |
-| **Module-owned ports/adapters** | Shared domain ports            | True loose coupling — modules don't depend on each other         |
-| **Modular Monolith**           | Microservices                  | Simpler for assignment scope, clear boundaries, can extract later|
-| **Some code duplication**       | Shared repository adapter      | Independence > DRY — each module can evolve separately           |
-| **shared/ has no business logic** | Domain services in shared    | Keeps modules self-contained, shared is just types               |
+| Decision                          | Alternative Considered    | Why We Chose This                                                 |
+| --------------------------------- | ------------------------- | ----------------------------------------------------------------- |
+| **Single `repositories/` folder** | Separate `ports/` + `adapters/` | Simpler structure — interfaces and implementations colocated      |
+| **`*.interface.ts` + `*.ts` naming** | `.port.ts` + `.adapter.ts` | Cleaner naming, still clear distinction                          |
+| **Modular Monolith**              | Microservices             | Simpler for assignment scope, clear boundaries, can extract later |
+| **Some code duplication**         | Shared repository adapter | Independence > DRY — each module can evolve separately            |
+| **shared/ has no business logic** | Domain services in shared | Keeps modules self-contained, shared is just types                |
 
 ### Module-Owned Ports Trade-offs
 
 **Pros:**
+
 - ✅ True Interface Segregation (each module sees only what it needs)
 - ✅ Modules can be extracted to microservices independently
 - ✅ Easy to test each module in isolation
@@ -1350,6 +1350,7 @@ Each module is **self-contained** and can be extracted to a microservice:
 - ✅ Changes to CMS don't affect Discovery or Ingestion
 
 **Cons:**
+
 - ⚠️ Some code duplication in adapters (e.g., `findById` logic)
 - ⚠️ More files to maintain
 - ⚠️ Need to update multiple adapters if ORM entity changes
@@ -1358,12 +1359,12 @@ Each module is **self-contained** and can be extracted to a microservice:
 
 ### Decisions Retained
 
-| Decision             | Alternative Considered   | Why We Kept This                                                  |
-| -------------------- | ------------------------ | ----------------------------------------------------------------- |
-| **PostgreSQL**       | MongoDB                  | Assignment mentions PostgreSQL, relational model fits             |
-| **REST for CMS**     | GraphQL for both         | REST is simpler for CRUD, GraphQL shines for flexible reads       |
-| **JSONB metadata**   | Separate tables per type | Extensible without migrations, validates at app layer             |
-| **Strategy Pattern** | Hard-coded importers     | Shows extensibility, easy to add RSS/Spotify later                |
+| Decision             | Alternative Considered   | Why We Kept This                                            |
+| -------------------- | ------------------------ | ----------------------------------------------------------- |
+| **PostgreSQL**       | MongoDB                  | Assignment mentions PostgreSQL, relational model fits       |
+| **REST for CMS**     | GraphQL for both         | REST is simpler for CRUD, GraphQL shines for flexible reads |
+| **JSONB metadata**   | Separate tables per type | Extensible without migrations, validates at app layer       |
+| **Strategy Pattern** | Hard-coded importers     | Shows extensibility, easy to add RSS/Spotify later          |
 
 ### Production Evolution Path
 

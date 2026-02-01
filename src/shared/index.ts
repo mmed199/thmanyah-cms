@@ -16,3 +16,6 @@ export * from "./types";
 
 // Persistence
 export { ProgramOrmEntity, ContentOrmEntity, ContentMapper, ProgramMapper } from "./persistence";
+
+// Seeder
+export * from "./seeder";

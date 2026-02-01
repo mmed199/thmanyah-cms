@@ -55,7 +55,9 @@ export class Content {
    * Update content properties
    * Excluding id, createdAt, and status
    */
-  update(props: Partial<Omit<CreateContentProps, "id" | "createdAt" | "status" | "publishedAt">>): void {
+  update(
+    props: Partial<Omit<CreateContentProps, "id" | "createdAt" | "status" | "publishedAt">>,
+  ): void {
     if (props.programId !== undefined) this.programId = props.programId;
     if (props.title !== undefined) this.title = props.title;
     if (props.description !== undefined) this.description = props.description ?? null;

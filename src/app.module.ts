@@ -1,16 +1,29 @@
+/**
+ * App Module
+ *
+ * Root module that bootstraps the application.
+ * Each feature module (CMS, Discovery, Ingestion) is self-contained
+ * with its own ports, adapters, and services.
+ */
+
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { EventEmitterModule } from "@nestjs/event-emitter";
-import { appConfig, databaseConfig, elasticsearchConfig, natsConfig } from "./config";
-import { ContentModule } from "./modules/content/content.module";
+import { appConfig, databaseConfig, redisConfig } from "./config";
+import { CmsModule } from "./cms";
+import { IngestionModule } from "./ingestion";
+import { DiscoveryModule } from "./discovery";
+import { SeederModule } from "./shared/seeder";
+
+// Shared persistence entities for TypeORM auto-loading
+import { ContentOrmEntity, ProgramOrmEntity } from "./shared/persistence";
 
 @Module({
   imports: [
     // Config
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, elasticsearchConfig, natsConfig],
+      load: [appConfig, databaseConfig, redisConfig],
     }),
 
     // Database
@@ -24,17 +37,19 @@ import { ContentModule } from "./modules/content/content.module";
         database: configService.get<string>("database.name"),
         username: configService.get<string>("database.user"),
         password: configService.get<string>("database.password"),
-        autoLoadEntities: true,
+        entities: [ContentOrmEntity, ProgramOrmEntity],
         synchronize: configService.get<string>("app.nodeEnv") === "development",
         logging: configService.get<string>("app.nodeEnv") === "development",
       }),
     }),
 
-    // Enable in-process event driven architecture
-    EventEmitterModule.forRoot(),
+    // Feature Modules (each self-contained with own ports & adapters)
+    CmsModule, // REST API for content management
+    IngestionModule, // Content ingestion from external sources
+    DiscoveryModule, // GraphQL API for consumers
 
-    // Feature Modules
-    ContentModule,
+    // Seeder (populates initial data in development)
+    SeederModule,
   ],
 })
 export class AppModule {}

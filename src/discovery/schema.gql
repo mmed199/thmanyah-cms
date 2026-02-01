@@ -1,0 +1,151 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""Content category"""
+enum Category {
+  BUSINESS
+  CULTURE
+  ENTERTAINMENT
+  SOCIETY
+  TECHNOLOGY
+}
+
+"""A piece of content (episode, video, etc.)"""
+type ContentGraphQLType {
+  category: Category!
+  createdAt: DateTime!
+  description: String
+  duration: Float
+  externalId: String
+  id: ID!
+  language: String!
+  programId: ID
+  publishedAt: DateTime
+  source: Source!
+  status: Status!
+  thumbnailUrl: String
+  title: String!
+  type: ContentType!
+  updatedAt: DateTime!
+}
+
+"""Type of content"""
+enum ContentType {
+  DOCUMENTARY_EPISODE
+  PODCAST_EPISODE
+  STANDALONE_VIDEO
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type PaginatedContents {
+  items: [ContentGraphQLType!]!
+  limit: Int!
+  offset: Int!
+  total: Int!
+}
+
+type PaginatedPrograms {
+  items: [ProgramGraphQLType!]!
+  limit: Int!
+  offset: Int!
+  total: Int!
+}
+
+"""A program (podcast series, documentary series, etc.)"""
+type ProgramGraphQLType {
+  category: Category!
+  contentCount: Int!
+  contents(limit: Int = 20, offset: Int = 0): [ContentGraphQLType!]!
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  language: String!
+  status: Status!
+  title: String!
+  type: ProgramType!
+  updatedAt: DateTime!
+}
+
+"""Type of program"""
+enum ProgramType {
+  DOCUMENTARY_SERIES
+  PODCAST_SERIES
+}
+
+type Query {
+  content(id: ID!): ContentGraphQLType
+  contents(category: Category, language: String, limit: Int = 20, offset: Int = 0, programId: ID, type: ContentType): PaginatedContents!
+  program(id: ID!): ProgramGraphQLType
+  programs(category: Category, language: String, limit: Int = 20, offset: Int = 0, type: ProgramType): PaginatedPrograms!
+  search(input: SearchInput!): SearchResult!
+}
+
+input SearchInput {
+  """Filter by categories"""
+  categories: [Category!]
+
+  """Filter by content types"""
+  contentTypes: [ContentType!]
+
+  """Filter by language code"""
+  language: String
+  limit: Int = 20
+  offset: Int = 0
+
+  """Filter by program types"""
+  programTypes: [ProgramType!]
+
+  """Search query text"""
+  query: String
+  sortBy: SortField = RELEVANCE
+  sortOrder: SortOrder = DESC
+}
+
+type SearchResult {
+  items: [SearchResultItem!]!
+  limit: Int!
+  offset: Int!
+  query: String
+  total: Int!
+}
+
+type SearchResultItem {
+  content: ContentGraphQLType
+  program: ProgramGraphQLType
+
+  """Search relevance score"""
+  score: Float!
+}
+
+"""Field to sort by"""
+enum SortField {
+  CREATED_AT
+  PUBLISHED_AT
+  RELEVANCE
+  TITLE
+}
+
+"""Sort order direction"""
+enum SortOrder {
+  ASC
+  DESC
+}
+
+"""Content source"""
+enum Source {
+  MANUAL
+  RSS
+  YOUTUBE
+}
+
+"""Publication status"""
+enum Status {
+  ARCHIVED
+  DRAFT
+  PUBLISHED
+}

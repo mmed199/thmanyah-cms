@@ -6,8 +6,4 @@ export {
   ContentArchivedEvent,
   ContentDeletedEvent,
 } from "./content";
-export {
-  ProgramCreatedEvent,
-  ProgramUpdatedEvent,
-  ProgramDeletedEvent,
-} from "./program";
+export { ProgramCreatedEvent, ProgramUpdatedEvent, ProgramDeletedEvent } from "./program";
