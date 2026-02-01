@@ -6,7 +6,7 @@
 
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { createTestApp, generateTestProgram, generateTestContent } from "./utils";
+import { createTestApp, generateTestProgram, generateTestContent, stopPostgresContainer } from "./utils";
 
 describe("Discovery GraphQL (e2e)", () => {
   let app: INestApplication;
@@ -41,7 +41,8 @@ describe("Discovery GraphQL (e2e)", () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
+    await stopPostgresContainer();
   });
 
   describe("Query: program", () => {

@@ -1,41 +1,72 @@
 /**
  * Test Utilities
  *
- * Helper functions for e2e tests.
+ * Helper functions for e2e tests using Testcontainers.
  */
 
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication, ValidationPipe } from "@nestjs/common";
-import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from "@testcontainers/postgresql";
+import { Wait } from "testcontainers";
 import { appConfig, databaseConfig, redisConfig } from "src/config";
 import { CmsModule } from "src/cms";
 import { IngestionModule } from "src/ingestion";
 import { DiscoveryModule } from "src/discovery";
 import { ContentOrmEntity, ProgramOrmEntity } from "src/shared/persistence";
 
+let postgresContainer: StartedPostgreSqlContainer | null = null;
+
+/**
+ * Start the Postgres container (shared across tests in a file)
+ * Works with both Docker and Podman
+ */
+export async function startPostgresContainer(): Promise<StartedPostgreSqlContainer> {
+  if (!postgresContainer) {
+    postgresContainer = await new PostgreSqlContainer("postgres:16-alpine")
+      .withDatabase("thmanyah_test")
+      .withUsername("test")
+      .withPassword("test")
+      .withWaitStrategy(Wait.forListeningPorts())
+      .withStartupTimeout(120000)
+      .start();
+  }
+  return postgresContainer;
+}
+
+/**
+ * Stop the Postgres container
+ */
+export async function stopPostgresContainer(): Promise<void> {
+  if (postgresContainer) {
+    await postgresContainer.stop();
+    postgresContainer = null;
+  }
+}
+
+/**
+ * Create a test application with Testcontainers Postgres
+ */
 export async function createTestApp(): Promise<INestApplication> {
+  const container = await startPostgresContainer();
+
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
         isGlobal: true,
         load: [appConfig, databaseConfig, redisConfig],
-        envFilePath: ".env.test",
       }),
-      TypeOrmModule.forRootAsync({
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          type: "postgres",
-          host: configService.get<string>("database.host", "localhost"),
-          port: configService.get<number>("database.port", 5432),
-          database: configService.get<string>("database.name", "thmanyah_test"),
-          username: configService.get<string>("database.user", "postgres"),
-          password: configService.get<string>("database.password", "postgres"),
-          entities: [ContentOrmEntity, ProgramOrmEntity],
-          synchronize: true, // Use synchronize for tests
-          dropSchema: true, // Clean database before tests
-        }),
+      TypeOrmModule.forRoot({
+        type: "postgres",
+        host: container.getHost(),
+        port: container.getPort(),
+        database: container.getDatabase(),
+        username: container.getUsername(),
+        password: container.getPassword(),
+        entities: [ContentOrmEntity, ProgramOrmEntity],
+        synchronize: true,
+        dropSchema: true,
       }),
       CmsModule,
       IngestionModule,
@@ -56,7 +87,6 @@ export async function createTestApp(): Promise<INestApplication> {
     }),
   );
 
-  // Match main.ts configuration
   app.setGlobalPrefix("api");
 
   await app.init();

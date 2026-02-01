@@ -6,7 +6,7 @@
 
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { createTestApp, generateTestProgram } from "./utils";
+import { createTestApp, generateTestProgram, stopPostgresContainer } from "./utils";
 
 describe("Ingestion (e2e)", () => {
   let app: INestApplication;
@@ -16,7 +16,8 @@ describe("Ingestion (e2e)", () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
+    await stopPostgresContainer();
   });
 
   describe("GET /api/cms/ingestion/sources", () => {

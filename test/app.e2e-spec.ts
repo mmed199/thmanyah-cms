@@ -6,7 +6,7 @@
 
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { createTestApp } from "./utils";
+import { createTestApp, stopPostgresContainer } from "./utils";
 
 describe("Application (e2e)", () => {
   let app: INestApplication;
@@ -16,7 +16,8 @@ describe("Application (e2e)", () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
+    await stopPostgresContainer();
   });
 
   describe("Health", () => {
