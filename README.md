@@ -58,8 +58,8 @@ This project follows a **modular monolith** approach with **clean architecture p
 ```mermaid
 flowchart TB
     subgraph Clients[Clients]
-      Editors[Editors (Internal)]
-      Users[Public Users]
+      Editors["Editors (Internal)"]
+      Users["Public Users"]
     end
 
     subgraph App[NestJS Modular Monolith]
