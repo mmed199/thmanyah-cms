@@ -6,7 +6,7 @@
 
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { createTestApp, generateTestProgram, stopPostgresContainer } from "./utils";
+import { createTestApp, generateTestProgram, stopAllContainers } from "./utils";
 
 describe("CMS Programs (e2e)", () => {
   let app: INestApplication;
@@ -17,7 +17,7 @@ describe("CMS Programs (e2e)", () => {
 
   afterAll(async () => {
     await app?.close();
-    await stopPostgresContainer();
+    await stopAllContainers();
   });
 
   describe("POST /api/cms/programs", () => {
