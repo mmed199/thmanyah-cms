@@ -29,7 +29,7 @@ export class ProgramsResolver {
     // Try cache first
     const cached = await this.cacheService.getProgram<ProgramGraphQLType>(id);
     if (cached) {
-      return cached;
+      return this.mapToGraphQL(cached);
     }
 
     try {
@@ -68,7 +68,10 @@ export class ProgramsResolver {
       `programs:${cacheKey}`,
     );
     if (cached) {
-      return cached;
+      return {
+        ...cached,
+        items: cached.items.map(this.mapToGraphQL),
+      };
     }
 
     const results = await this.searchService.searchPrograms({
@@ -100,7 +103,7 @@ export class ProgramsResolver {
     const cacheKey = `${program.id}:${limit}:${offset}`;
     const cached = await this.cacheService.getProgramContents<ContentGraphQLType[]>(cacheKey);
     if (cached) {
-      return cached;
+      return cached.map(this.mapContentToGraphQL);
     }
 
     const results = await this.searchService.getPublishedContentsByProgram(
@@ -129,8 +132,8 @@ export class ProgramsResolver {
       category: program.category,
       language: program.language,
       status: program.status,
-      createdAt: program.createdAt,
-      updatedAt: program.updatedAt,
+      createdAt: new Date(program.createdAt),
+      updatedAt: new Date(program.updatedAt),
     };
   }
 
@@ -146,9 +149,9 @@ export class ProgramsResolver {
       status: content.status,
       source: content.source,
       externalId: content.externalId ?? undefined,
-      publishedAt: content.publishedAt ?? undefined,
-      createdAt: content.createdAt,
-      updatedAt: content.updatedAt,
+      publishedAt: content.publishedAt ? new Date(content.publishedAt) : undefined,
+      createdAt: new Date(content.createdAt),
+      updatedAt: new Date(content.updatedAt),
       duration: content.metadata?.duration,
       thumbnailUrl: content.metadata?.thumbnailUrl,
     };

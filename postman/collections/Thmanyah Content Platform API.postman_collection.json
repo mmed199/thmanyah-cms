@@ -10,35 +10,6 @@
       "name": "CMS - Programs",
       "item": [
         {
-          "name": "Create Program",
-          "id": "90c21ad8-b9c0-407c-a772-7bae14699575",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"سوالف بزنس\",\n  \"description\": \"بودكاست عن ريادة الأعمال والبزنس\",\n  \"type\": \"podcast_series\",\n  \"category\": \"business\",\n  \"language\": \"ar\",\n  \"metadata\": {\n    \"host\": \"مشهور الدبيان\",\n    \"coverImage\": \"https://example.com/cover.jpg\"\n  }\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/cms/programs",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "cms",
-                "programs"
-              ]
-            },
-            "description": "Create a new program (podcast series or documentary series).\n\n**Required fields:**\n- `title`: Program title (1-255 characters)\n- `type`: `podcast_series` or `documentary_series`\n- `category`: `technology`, `culture`, `business`, `society`, or `entertainment`\n\n**Optional fields:**\n- `description`: Program description (max 2000 characters)\n- `language`: Language code (default: `ar`)\n- `metadata`: Additional metadata object"
-          },
-          "response": []
-        },
-        {
           "name": "List Programs",
           "id": "68eff767-fe1e-4e1f-a9dc-79e2c11412ae",
           "request": {
@@ -138,6 +109,35 @@
           "response": []
         },
         {
+          "name": "Create Program",
+          "id": "90c21ad8-b9c0-407c-a772-7bae14699575",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"بودكاست آدم\",\n  \"description\": \"في كل حلقة من بودكاست آدم نستكشف خبايا العقل وأعماق النفس البشرية.. نتعرّف على الأسباب التي شكّلت تفكيرنا وتصرفاتنا وشخصيّتنا استنادًا على الأبحاث والخبرات الإنسانية.. عبر هذه السلسلة يبسّط د. محمد الحاجي المعرفة العلمية إلى تبصّرات نستطيع من خلالها بناء حياةٍ ذات جودة ومعنى.\",\n  \"type\": \"podcast_series\",\n  \"category\": \"culture\",\n  \"language\": \"ar\",\n  \"metadata\": {\n    \"host\": \"محمد الحاجي\",\n    \"coverImage\": \"https://prod842022-kiet-v2-storage-uploadsbucketc4b27cc7-115kl3obdhv7w.s3.eu-central-1.amazonaws.com/assets/tenant/1jhggnmybp/projects/9a630ea8-282e-4280-8fab-2b31e738e8c0.jpeg\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{cmsURL}}/cms/programs",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "programs"
+              ]
+            },
+            "description": "Create a new program (podcast series or documentary series).\n\n**Required fields:**\n- `title`: Program title (1-255 characters)\n- `type`: `podcast_series` or `documentary_series`\n- `category`: `technology`, `culture`, `business`, `society`, or `entertainment`\n\n**Optional fields:**\n- `description`: Program description (max 2000 characters)\n- `language`: Language code (default: `ar`)\n- `metadata`: Additional metadata object"
+          },
+          "response": []
+        },
+        {
           "name": "Update Program",
           "id": "14fb8a8e-5d99-4599-8ff4-13ca975d5c2f",
           "request": {
@@ -150,7 +150,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"سوالف بزنس - الموسم الثاني\",\n  \"description\": \"Updated description\",\n  \"status\": \"published\"\n}"
+              "raw": "{\n  \"description\": \"بودكاست للمهتمين بالبزنس وريادة الأعمال. كل حلقة راح تسمع تجربة شخص في البزنس بتفاصيلها، بدون مجاملات أو تنظير.\"\n}"
             },
             "url": {
               "raw": "{{cmsURL}}/cms/programs/{{programId}}",
@@ -195,35 +195,6 @@
     {
       "name": "CMS - Contents",
       "item": [
-        {
-          "name": "Create Content",
-          "id": "ce274552-1402-47c8-92ca-0d1592309e53",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"programId\": \"{{programId}}\",\n  \"title\": \"الحلقة 1: بداية الرحلة\",\n  \"description\": \"في هذه الحلقة نتحدث عن...\",\n  \"type\": \"podcast_episode\",\n  \"category\": \"business\",\n  \"language\": \"ar\",\n  \"source\": \"manual\",\n  \"metadata\": {\n    \"duration\": 3600,\n    \"thumbnailUrl\": \"https://example.com/thumb.jpg\"\n  }\n}"
-            },
-            "url": {
-              "raw": "{{cmsURL}}/cms/contents",
-              "host": [
-                "{{cmsURL}}"
-              ],
-              "path": [
-                "cms",
-                "contents"
-              ]
-            },
-            "description": "Create a new content item.\n\n**Required fields:**\n- `title`: Content title (1-500 characters)\n- `type`: `podcast_episode`, `documentary_episode`, or `standalone_video`\n- `category`: `technology`, `culture`, `business`, `society`, or `entertainment`\n\n**Optional fields:**\n- `programId`: Parent program UUID\n- `description`: Content description (max 5000 characters)\n- `language`: Language code (default: `ar`)\n- `source`: `manual`, `youtube`, or `rss` (default: `manual`)\n- `externalId`: External ID for imported content\n- `metadata`: Additional metadata (duration, thumbnailUrl, etc.)"
-          },
-          "response": []
-        },
         {
           "name": "List Contents",
           "id": "e053db83-a108-4efe-bba3-38795143be52",
@@ -284,7 +255,8 @@
                 },
                 {
                   "key": "limit",
-                  "value": "10"
+                  "value": "10",
+                  "uuid": "ed6b519d-bcc3-49db-a296-8dc43325083c"
                 }
               ]
             },
@@ -344,23 +316,31 @@
           "response": []
         },
         {
-          "name": "Delete Content",
-          "id": "7f20f496-3f0e-46af-98da-3553996cf948",
+          "name": "Create Content",
+          "id": "ce274552-1402-47c8-92ca-0d1592309e53",
           "request": {
-            "method": "DELETE",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"programId\": \"{{programId}}\",\n  \"title\": \"كيف تضمن الشركات استدامتها\",\n  \"description\": \"ضيفنا في هذة الحلقة أنس العسافي، مستشار وخبير في الحوكمة. نتحدث عن المفهوم الصحيح والواقعي للحوكمة، في أي مرحلة يجب أن تتبناها الشركة؟ ومن أين تبدأ؟ كيف تكون الحوكمة في الشركات العائلية؟\",\n  \"type\": \"podcast_episode\",\n  \"category\": \"business\",\n  \"language\": \"ar\",\n  \"source\": \"manual\",\n  \"metadata\": {\n    \"duration\": 3600,\n    \"thumbnailUrl\": \"https://r2-bucket.thmanyah.com/assets/post/new-story/Cover-Design-(21).jpg\"\n  }\n}"
+            },
             "url": {
-              "raw": "{{cmsURL}}/cms/contents/{{contentId}}",
+              "raw": "{{cmsURL}}/cms/contents",
               "host": [
                 "{{cmsURL}}"
               ],
               "path": [
                 "cms",
-                "contents",
-                "{{contentId}}"
+                "contents"
               ]
             },
-            "description": "Delete a content item by its UUID.\n\n**Path Parameters:**\n- `id`: Content UUID\n\n**Response:** 204 No Content on success"
+            "description": "Create a new content item.\n\n**Required fields:**\n- `title`: Content title (1-500 characters)\n- `type`: `podcast_episode`, `documentary_episode`, or `standalone_video`\n- `category`: `technology`, `culture`, `business`, `society`, or `entertainment`\n\n**Optional fields:**\n- `programId`: Parent program UUID\n- `description`: Content description (max 5000 characters)\n- `language`: Language code (default: `ar`)\n- `source`: `manual`, `youtube`, or `rss` (default: `manual`)\n- `externalId`: External ID for imported content\n- `metadata`: Additional metadata (duration, thumbnailUrl, etc.)"
           },
           "response": []
         },
@@ -405,6 +385,27 @@
               ]
             },
             "description": "Archive a content item (change status to `archived`).\n\n**Path Parameters:**\n- `id`: Content UUID\n\n**Note:** Only valid for content in `published` status."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Content",
+          "id": "7f20f496-3f0e-46af-98da-3553996cf948",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{cmsURL}}/cms/contents/{{contentId}}",
+              "host": [
+                "{{cmsURL}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Delete a content item by its UUID.\n\n**Path Parameters:**\n- `id`: Content UUID\n\n**Response:** 204 No Content on success"
           },
           "response": []
         }
@@ -668,22 +669,22 @@
   ],
   "variable": [
     {
-      "id": "6d5c4086-6639-4e6a-b490-0a91f679109c",
+      "id": "62431c75-2dbe-4240-8edf-1ff97b4d9bc3",
       "key": "cmsURL",
       "value": "http://localhost:3000/api"
     },
     {
-      "id": "f7178759-79bd-4ac4-81ec-8e7d24ec5259",
+      "id": "0e5e58e4-b89d-47af-b0bd-4d14194c9ec0",
       "key": "programId",
       "value": ""
     },
     {
-      "id": "1efd2638-f434-4f01-832f-e0aae6112117",
+      "id": "7a7f1e7c-e34a-4450-8dd3-429681e43f90",
       "key": "contentId",
       "value": ""
     },
     {
-      "id": "99675e13-c485-4246-a69a-c4a7167fec21",
+      "id": "6eeec242-28c4-4975-bc01-daac3244b8e5",
       "key": "graphURL",
       "value": ""
     }

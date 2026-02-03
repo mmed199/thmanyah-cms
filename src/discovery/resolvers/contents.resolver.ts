@@ -28,7 +28,7 @@ export class ContentsResolver {
     // Try cache first
     const cached = await this.cacheService.getContent<ContentGraphQLType>(id);
     if (cached) {
-      return cached;
+      return this.mapToGraphQL(cached);
     }
 
     try {
@@ -69,7 +69,10 @@ export class ContentsResolver {
       `contents:${cacheKey}`,
     );
     if (cached) {
-      return cached;
+      return {
+        ...cached,
+        items: cached.items.map(this.mapToGraphQL),
+      };
     }
 
     let results;
@@ -113,9 +116,9 @@ export class ContentsResolver {
       status: content.status,
       source: content.source,
       externalId: content.externalId ?? undefined,
-      publishedAt: content.publishedAt ?? undefined,
-      createdAt: content.createdAt,
-      updatedAt: content.updatedAt,
+      publishedAt: content.publishedAt ? new Date(content.publishedAt) : undefined,
+      createdAt: new Date(content.createdAt),
+      updatedAt: new Date(content.updatedAt),
       duration: content.metadata?.duration,
       thumbnailUrl: content.metadata?.thumbnailUrl,
     };
