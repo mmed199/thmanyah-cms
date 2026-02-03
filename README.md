@@ -1,5 +1,7 @@
 # Thmanyah Content Platform (CMS + Discovery)
 
+[English](README.md) | [العربية](README.ar.md)
+
 A **NestJS modular-monolith** implementing a two-component system (CMS + Discovery) as a response to **Thmanyah’s Senior Software Engineer Assignment (Backend)**.
 
 - **CMS (REST)** for editors to manage programs and episodes (CRUD + publish/archive)
