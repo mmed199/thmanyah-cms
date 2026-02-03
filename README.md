@@ -1,20 +1,41 @@
-# Thmanyah Content Platform (CMS + Discovery)
+<div align="center">
 
-[English](README.md) | [العربية](README.ar.md)
+# 🎙️ Thmanyah Content Platform
 
-A **NestJS modular-monolith** implementing a two-component system (CMS + Discovery) as a response to **Thmanyah’s Senior Software Engineer Assignment (Backend)**.
+<p>
+  <a href="README.md"><img src="https://img.shields.io/badge/lang-English-blue?style=for-the-badge" alt="English"/></a>
+  <a href="README.ar.md"><img src="https://img.shields.io/badge/lang-Arabic-green?style=for-the-badge" alt="العربية"/></a>
+</p>
 
+**A NestJS modular-monolith implementing a three-module system**
+
+<p>
+  <img src="https://img.shields.io/badge/Node.js-20-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js"/>
+  <img src="https://img.shields.io/badge/NestJS-11-E0234E?style=flat-square&logo=nestjs&logoColor=white" alt="NestJS"/>
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-15-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL"/>
+  <img src="https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis"/>
+  <img src="https://img.shields.io/badge/GraphQL-E10098?style=flat-square&logo=graphql&logoColor=white" alt="GraphQL"/>
+</p>
+
+</div>
+
+---
+
+> [!NOTE]
+> This project was developed as a response to **Thmanyah's Senior Software Engineer Assignment (Backend)**.
+
+This project contains three modules : 
 - **CMS (REST)** for editors to manage programs and episodes (CRUD + publish/archive)
 - **Discovery (GraphQL)** for public browsing and full-text search (published-only) with **Redis caching**
 - **Ingestion (REST)** to demonstrate future import extensibility (strategy-based, mock YouTube)
 
-## Quick links
-
+## 🔗 Quick Links
 - Assignment brief: [`.github/software_engineer_assignment_english.md`](.github/software_engineer_assignment_english.md)
 - Design doc (architecture, trade-offs, diagrams): [`docs/design.md`](docs/design.md)
 - Postman collection: [`postman/collections/Thmanyah Content Platform API.postman_collection.json`](postman/collections/Thmanyah%20Content%20Platform%20API.postman_collection.json)
 
-## Endpoints
+## 🌐 Endpoints
 
 After running locally:
 
@@ -22,7 +43,7 @@ After running locally:
 - Swagger (OpenAPI): `http://localhost:3000/docs`
 - Discovery GraphQL: `http://localhost:3000/graphql`
 
-## Requirements → Implementation (assignment mapping)
+## ✅ Requirements → Implementation
 
 ### 1) Content Management System (CMS)
 
@@ -50,7 +71,7 @@ To demonstrate import from multiple sources:
 - The **Ingestion module** exposes REST endpoints and uses a **strategy pattern** (`src/ingestion/strategies/*`)
 - A mock YouTube importer is provided as an example adapter
 
-## Architecture (high level)
+## 🏗️ Architecture
 
 This project follows a **modular monolith** approach with **clean architecture principles**:
 
@@ -91,7 +112,7 @@ flowchart TB
 
 For full design rationale (SOLID, module boundaries, caching strategy, Postgres full-text search, trade-offs), see [`docs/design.md`](docs/design.md).
 
-## Tech stack
+## 💻 Tech Stack
 
 - **Runtime:** Node.js + TypeScript
 - **Framework:** NestJS
@@ -100,7 +121,7 @@ For full design rationale (SOLID, module boundaries, caching strategy, Postgres 
 - **APIs:** REST (CMS + Ingestion) + GraphQL (Discovery)
 - **Docs:** Swagger at `/docs`
 
-## Data model (brief)
+## 📊 Data Model
 
 Core entities:
 
@@ -112,7 +133,7 @@ Design notes:
 - Extensible metadata is stored as JSON (`metadata`)
 - Discovery search is implemented using PostgreSQL full-text search (see `docs/design.md`)
 
-## APIs
+## 📡 APIs
 
 ### CMS (REST)
 
@@ -244,7 +265,7 @@ Variables:
 }
 ```
 
-## Running locally
+## 🚀 Running Locally
 
 ### Prerequisites
 
@@ -257,11 +278,11 @@ Variables:
 cp .env.example .env
 npm install
 
-# Start via Docker Compose (app + Postgres + Redis)
-docker compose up --build
+# Start via Make (app + Postgres + Redis)
+make up & make dev
 # App is available at http://localhost:3000
 
-# Alternatively: start infra only then run locally
+# Alternatively: start using docker
 docker compose up -d postgres redis
 npm run start:dev
 ```
@@ -272,31 +293,31 @@ Notes:
 - Swagger is available at `/docs`.
 - In `NODE_ENV=development`, TypeORM can run migrations via `npm run migration:run` (see **Database migrations**).
 
-## Seed / demo data
+## 🌱 Seed / Demo Data
 
 A seeder runs automatically on application bootstrap and seeds only if the database is empty (`SeederService` implements `OnApplicationBootstrap`).
 
-## Testing
+## 🧪 Testing
 
 ```bash
 npm test
 npm run test:e2e
 ```
 
-## Database migrations
+## 🗃️ Database Migrations
 
 - Generate new migration: `npm run migration:generate -- src/migrations/<name>`
 - Run migrations (locally or inside the Docker container): `npm run migration:run`
 - Initial migration (`src/migrations/1710000000000-initial-schema.ts`) creates tables, enums, and full-text-search indexes (`tsvector` + GIN) for both `programs` and `content`.
 
-## Challenges / trade-offs / improvements
+## ⚖️ Challenges / Trade-offs / Improvements
 
 - **Postgres FTS vs Elasticsearch:** kept infra minimal for the assignment; can be swapped for Elasticsearch/OpenSearch when relevance and scale require it.
 - **In-process events (EventEmitter) vs a broker:** simplest for a modular monolith; can evolve to NATS/Kafka for async workloads and cross-service communication.
 - **Cache invalidation:** event-driven invalidation + TTL is simple but eventually consistent; can evolve with versioned keys or write-through caching.
 - **Missing concerns (intentional for scope):** auth, rate-limits, audit logs, multi-tenant editorial permissions.
 
-## Known limitations
+## ⚠️ Known Limitations
 
 - No user management/authentication
 - Mock importer (no real YouTube API integration)
