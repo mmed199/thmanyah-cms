@@ -41,7 +41,7 @@ import { ProgramOrmEntity } from "./shared/persistence/entities/program.orm-enti
         username: configService.get<string>("database.user"),
         password: configService.get<string>("database.password"),
         entities: [ContentOrmEntity, ProgramOrmEntity],
-        synchronize: configService.get<string>("app.nodeEnv") === "development",
+        synchronize: false, // Always use migrations for schema changes
         logging: configService.get<string>("app.nodeEnv") === "development",
       }),
     }),

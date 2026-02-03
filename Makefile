@@ -17,6 +17,9 @@ runtime:
 	@echo "Using: $(CONTAINER_RUNTIME) with $(COMPOSE)"
 up:
 	$(COMPOSE) up -d
+	@echo "⏳ Waiting for database to be ready..."
+	@sleep 5
+	npm run migration:run
 down:
 	$(COMPOSE) down
 logs:
@@ -61,9 +64,10 @@ build:
 lint:
 	npm run lint
 
-## First-time setup: install deps + start infrastructure
+## First-time setup: install deps + start infrastructure + run migrations
 setup: install up
 	@echo "⏳ Waiting for services to be healthy..."
 	@sleep 10
 	@make health
+	@npm run migration:run
 	@echo "✅ Development environment ready!"

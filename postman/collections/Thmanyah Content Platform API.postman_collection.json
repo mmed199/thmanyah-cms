@@ -298,7 +298,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"الحلقة 1: بداية الرحلة (محدث)\",\n  \"description\": \"Updated description\",\n  \"status\": \"published\"\n}"
+              "raw": "{\n  \"title\": \"الحلقة 1: بداية الرحلة (محدث)\",\n  \"description\": \"Updated description\",\n  \"status\": \"draft\"\n}"
             },
             "url": {
               "raw": "{{cmsURL}}/cms/contents/{{contentId}}",
@@ -627,7 +627,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"query Search($input: SearchInput!) { search(input: $input) { items { score program { id title description type category } content { id title description type category programId publishedAt duration thumbnailUrl } } total limit offset query } }\",\n  \"variables\": {\n    \"input\": {\n      \"query\": \"بزنس\",\n      \"categories\": null,\n      \"contentTypes\": null,\n      \"programTypes\": null,\n      \"language\": null,\n      \"sortBy\": \"RELEVANCE\",\n      \"sortOrder\": \"DESC\",\n      \"limit\": 20,\n      \"offset\": 0\n    }\n  }\n}"
+              "raw": "{\n  \"query\": \"query Search($input: SearchInput!) { search(input: $input) { items { score program { id title description type category } content { id title description type category programId publishedAt duration thumbnailUrl } } total limit offset query } }\",\n  \"variables\": {\n    \"input\": {\n      \"query\": \"بودكاست\",\n      \"categories\": null,\n      \"contentTypes\": null,\n      \"programTypes\": null,\n      \"language\": null,\n      \"sortBy\": \"RELEVANCE\",\n      \"sortOrder\": \"DESC\",\n      \"limit\": 20,\n      \"offset\": 0\n    }\n  }\n}"
             },
             "url": {
               "raw": "{{graphURL}}/graphql",
@@ -669,22 +669,22 @@
   ],
   "variable": [
     {
-      "id": "62431c75-2dbe-4240-8edf-1ff97b4d9bc3",
+      "id": "11ad8e27-0051-4038-8466-d8dc51f3d781",
       "key": "cmsURL",
       "value": "http://localhost:3000/api"
     },
     {
-      "id": "0e5e58e4-b89d-47af-b0bd-4d14194c9ec0",
+      "id": "5f4ad820-70bd-4b4a-8790-ade20aa5344e",
       "key": "programId",
       "value": ""
     },
     {
-      "id": "7a7f1e7c-e34a-4450-8dd3-429681e43f90",
+      "id": "b43f4430-db0e-4fcd-841c-46897e19f4ff",
       "key": "contentId",
       "value": ""
     },
     {
-      "id": "6eeec242-28c4-4975-bc01-daac3244b8e5",
+      "id": "fb4f2e64-0fb2-4e5f-b33c-246bc7e4ca16",
       "key": "graphURL",
       "value": ""
     }
